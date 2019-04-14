@@ -50,21 +50,23 @@ int GAME_Status(void)
 		if(THIS_GAME != NULL && THIS_GAME->Status())
 			CURRENT_GAME = THIS_GAME;
 	}
-	return CURRENT_GAME != NULL ? 1 : 0;
+	return (CURRENT_GAME != NULL);
 }
 //==========================================================================
 // Purpose: return game driver name
 //==========================================================================
 const char *GAME_Name(void)
 {
-	return CURRENT_GAME ? CURRENT_GAME->Name : NULL;
+	if(CURRENT_GAME != NULL)
+		return CURRENT_GAME->Name;
+	return NULL;
 }
 //==========================================================================
 // Purpose: inject via game driver
 //==========================================================================
 void GAME_Inject(void)
 {
-	if(CURRENT_GAME)
+	if(CURRENT_GAME != NULL)
 		CURRENT_GAME->Inject();
 }
 //==========================================================================
@@ -72,7 +74,7 @@ void GAME_Inject(void)
 //==========================================================================
 void GAME_Quit(void)
 {
-	if(CURRENT_GAME)
+	if(CURRENT_GAME != NULL)
 		CURRENT_GAME->Quit();
 	CURRENT_GAME = NULL;
 }
