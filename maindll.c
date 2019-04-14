@@ -426,7 +426,7 @@ static void GUI_Refresh(const HWND hW, const int revertbtn)
 	if(PROFILE[currentplayer].SETTINGS[CROSSHAIR]) // set percentage for crosshair movement
 		sprintf(label, "%d%%", PROFILE[currentplayer].SETTINGS[CROSSHAIR] * 100 / 6);
 	else
-		sprintf(label, "None"); // replace 0% with none
+		sprintf(label, "Locked"); // replace 0% with locked
 	SetDlgItemText(hW, IDC_SLIDER_DISPLAY02, label);
 	// set fov label
 	if(stopthread) // if game isn't running
