@@ -91,13 +91,17 @@ DWORD WINAPI DEV_InjectThread()
 	memset(&DEVICE, 0, sizeof(DEVICE)); // clear device struct
 	int checkwindowtick = 0; // check if emulator window is in focus
 	int togglebuffer = 0; // buffer cool down for mouse toggle
-	int ignoredevices = 0; // ignore device filtering flag (used if only 1 player is active)
+	int acceptalldevices = 0; // accept all device input (used if only 1 player is active)
+	unsigned char lockmousecounter = 0; // limit SetCursorPos execution
 	while(ManyMouse_PollEvent(&event)); // flush input before starting
+	{
 		Sleep(1);
+	}
 	while(!stopthread)
 	{
-		if(mousetoggle)
+		if(mousetoggle && lockmousecounter % 5 == 0) // don't execute every tick
 			SetCursorPos(lockpos.x, lockpos.y); // set mouse position to lock position
+		lockmousecounter++; // overflow pseudo-counter
 		if(togglebuffer > 0)
 			togglebuffer--;
 		for(int player = PLAYER1; player < ALLPLAYERS; player++)
@@ -123,11 +127,8 @@ DWORD WINAPI DEV_InjectThread()
 			{
 				if(PROFILE[player].SETTINGS[CONFIG] == DISABLED) // don't check for disabled players
 					continue;
-				if(ONLY1PLAYERACTIVE) // do not filter devices if only one player is active
-					ignoredevices = 1;
-				else
-					ignoredevices = 0;
-				if(PROFILE[player].SETTINGS[MOUSE] == (int)event.device || ignoredevices) // mouse movement
+				acceptalldevices = ONLY1PLAYERACTIVE; // do not filter devices if only one player is active
+				if(PROFILE[player].SETTINGS[MOUSE] == (int)event.device || acceptalldevices) // mouse movement
 				{
 					if(event.type == MANYMOUSE_EVENT_RELMOTION && mousetoggle)
 					{
@@ -169,7 +170,7 @@ DWORD WINAPI DEV_InjectThread()
 						DEVICE[player].WHEEL = 16; // hold button down for 32ms/64ms (non-oc emu need longer buffer because they run at lower framerate)
 					}
 				}
-				if(event.type == MANYMOUSE_EVENT_KEYBOARD && (PROFILE[player].SETTINGS[KEYBOARD] == (int)event.device || ignoredevices))
+				if(event.type == MANYMOUSE_EVENT_KEYBOARD && (PROFILE[player].SETTINGS[KEYBOARD] == (int)event.device || acceptalldevices))
 				{
 					for(int button = 0; button < 16; button++) // check for key presses
 					{
