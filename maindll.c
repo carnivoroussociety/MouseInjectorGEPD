@@ -385,9 +385,9 @@ static void GUI_Refresh(const HWND hW, const int revertbtn)
 	for(int button = 0; button < 16; button++) // load buttons from player struct and set input button statuses (setting to disabled/enabled)
 	{
 		SetDlgItemText(hW, IDC_PRIMARY00 + button, GetKeyName(PROFILE[currentplayer].BUTTONPRIM[button])); // get key
-		EnableWindow(GetDlgItem(hW, IDC_PRIMARY00 + button), PROFILE[currentplayer].SETTINGS[CONFIG] == DISABLED ? 0 : 1); // set status
+		EnableWindow(GetDlgItem(hW, IDC_PRIMARY00 + button), PROFILE[currentplayer].SETTINGS[CONFIG] != DISABLED); // set status
 		SetDlgItemText(hW, IDC_SECONDARY00 + button, GetKeyName(PROFILE[currentplayer].BUTTONSEC[button]));
-		EnableWindow(GetDlgItem(hW, IDC_SECONDARY00 + button), PROFILE[currentplayer].SETTINGS[CONFIG] == DISABLED ? 0 : 1);
+		EnableWindow(GetDlgItem(hW, IDC_SECONDARY00 + button), PROFILE[currentplayer].SETTINGS[CONFIG] != DISABLED);
 	}
 	// set keyboard/mouse to id stored in player's profile (only if they are valid)
 	if(ONLY1PLAYERACTIVE) // we accept all device input if there is only one player active, so disable all device related comboboxes/button
@@ -399,10 +399,10 @@ static void GUI_Refresh(const HWND hW, const int revertbtn)
 	}
 	else // multiple players are active
 	{
-		ShowWindow(GetDlgItem(hW, IDC_DETECTDEVICE), PROFILE[currentplayer].SETTINGS[CONFIG] != DISABLED && DEV_Init() > 2 ? 1 : 0); // if profile is active and multiple devices connected, show detect devices button
-		EnableWindow(GetDlgItem(hW, IDC_DETECTDEVICE), PROFILE[currentplayer].SETTINGS[CONFIG] != DISABLED && DEV_Init() > 2 ? 1 : 0); // if profile is active and multiple devices connected, enable detect devices button
-		EnableWindow(GetDlgItem(hW, IDC_MOUSESELECT), PROFILE[currentplayer].SETTINGS[CONFIG] != DISABLED && DEV_Init() > 2 ? 1 : 0); // if profile is active and multiple devices connected, enable mouse select combobox
-		EnableWindow(GetDlgItem(hW, IDC_KEYBOARDSELECT), PROFILE[currentplayer].SETTINGS[CONFIG] != DISABLED && DEV_Init() > 2 ? 1 : 0); // if profile is active and multiple devices connected, enable keyboard select combobox
+		ShowWindow(GetDlgItem(hW, IDC_DETECTDEVICE), PROFILE[currentplayer].SETTINGS[CONFIG] != DISABLED && DEV_Init() > 2); // if profile is active and multiple devices connected, show detect devices button
+		EnableWindow(GetDlgItem(hW, IDC_DETECTDEVICE), PROFILE[currentplayer].SETTINGS[CONFIG] != DISABLED && DEV_Init() > 2); // if profile is active and multiple devices connected, enable detect devices button
+		EnableWindow(GetDlgItem(hW, IDC_MOUSESELECT), PROFILE[currentplayer].SETTINGS[CONFIG] != DISABLED && DEV_Init() > 2); // if profile is active and multiple devices connected, enable mouse select combobox
+		EnableWindow(GetDlgItem(hW, IDC_KEYBOARDSELECT), PROFILE[currentplayer].SETTINGS[CONFIG] != DISABLED && DEV_Init() > 2); // if profile is active and multiple devices connected, enable keyboard select combobox
 	}
 	SendMessage(GetDlgItem(hW, IDC_MOUSESELECT), CB_SETCURSEL, DEV_TypeIndex(PROFILE[currentplayer].SETTINGS[MOUSE]), 0); // set mouse to saved device id from settings
 	SendMessage(GetDlgItem(hW, IDC_KEYBOARDSELECT), CB_SETCURSEL, DEV_TypeIndex(PROFILE[currentplayer].SETTINGS[KEYBOARD]), 0); // set keyboard to saved device id from settings
@@ -456,9 +456,9 @@ static void GUI_Refresh(const HWND hW, const int revertbtn)
 		SendMessage(GetDlgItem(hW, index + IDC_INVERTPITCH), BM_SETCHECK, PROFILE[currentplayer].SETTINGS[index + INVERTPITCH] ? BST_CHECKED : BST_UNCHECKED, 0);
 	// disable/enable sensitivity and checkboxes according to player status
 	for(int trackbar = IDC_SLIDER00; trackbar <= IDC_PDCURSORAIMING; trackbar++) // set trackbar and checkbox statuses
-		EnableWindow(GetDlgItem(hW, trackbar), PROFILE[currentplayer].SETTINGS[CONFIG] == DISABLED ? 0 : 1);
+		EnableWindow(GetDlgItem(hW, trackbar), PROFILE[currentplayer].SETTINGS[CONFIG] != DISABLED);
 	// enable/disable fov adjustment when game is running
-	EnableWindow(GetDlgItem(hW, IDC_RESETFOV), stopthread && overridefov != 60 ? 1 : 0); // disable/enable fov reset button depending if fov is default or not and if game isn't running
+	EnableWindow(GetDlgItem(hW, IDC_RESETFOV), stopthread && overridefov != 60); // disable/enable fov reset button depending if fov is default or not and if game isn't running
 	for(int fovbuttons = IDC_FOV_DEGREES; fovbuttons <= IDC_GESHOWCROSSHAIR; fovbuttons++)
 		EnableWindow(GetDlgItem(hW, fovbuttons), stopthread); // if stopthread is 0 it means game is running
 	SendMessage(GetDlgItem(hW, IDC_GESHOWCROSSHAIR), BM_SETCHECK, geshowcrosshair ? BST_CHECKED : BST_UNCHECKED, 0); // set checkbox for show crosshair
@@ -472,7 +472,7 @@ static void GUI_Refresh(const HWND hW, const int revertbtn)
 		allbuttonchecksum += PROFILE[currentplayer].BUTTONPRIM[buttonindex];
 		allbuttonchecksum += PROFILE[currentplayer].BUTTONSEC[buttonindex];
 	}
-	EnableWindow(GetDlgItem(hW, IDC_CLEAR), !allbuttonchecksum ? 0 : 1); // set clear button status
+	EnableWindow(GetDlgItem(hW, IDC_CLEAR), allbuttonchecksum > 0); // set clear button status
 	SetDlgItemText(hW, IDC_LOCK, GetKeyName(mousetogglekey)); // set mouse toggle text
 	SendMessage(GetDlgItem(hW, IDC_LOCKONFOCUS), BM_SETCHECK, mouselockonfocus ? BST_CHECKED : BST_UNCHECKED, 0); // set mouse lock checkbox
 	SendMessage(GetDlgItem(hW, IDC_UNLOCKONWINLOSS), BM_SETCHECK, mouseunlockonloss ? BST_CHECKED : BST_UNCHECKED, 0); // set mouse unlock checkbox
@@ -533,7 +533,7 @@ static void GUI_ProcessKey(const HWND hW, const int buttonid, const int primflag
 		allbuttonchecksum += PROFILE[currentplayer].BUTTONPRIM[buttonindex];
 		allbuttonchecksum += PROFILE[currentplayer].BUTTONSEC[buttonindex];
 	}
-	EnableWindow(GetDlgItem(hW, IDC_CLEAR), !allbuttonchecksum ? 0 : 1); // set clear button status
+	EnableWindow(GetDlgItem(hW, IDC_CLEAR), allbuttonchecksum > 0); // set clear button status
 }
 //==========================================================================
 // Purpose: detect keyboard and mice for profile
@@ -926,7 +926,7 @@ DLLEXPORT void CALL WM_KeyUp(WPARAM wParam, LPARAM lParam)
 DLLEXPORT void CALL HookRDRAM(DWORD *Mem, int OCFactor)
 {
 	rdramptr = (const unsigned char **)Mem;
-	emuoverclock = OCFactor >= 3 ? 1 : 0; // an overclock above 3 is guaranteed to be 60fps, so set to 0 if below 3 times overclock
+	emuoverclock = OCFactor >= 3; // an overclock above 3 is guaranteed to be 60fps, so set to 0 if below 3 times overclock
 	DRP_Update(); // init and update discord rich presence (discord will limit update rate to once every 15 seconds)
 }
 //==========================================================================

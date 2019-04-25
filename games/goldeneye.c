@@ -172,7 +172,7 @@ static void GE_Inject(void)
 		const int tankflag = EMU_ReadInt(GE_tankflag);
 		const int mproundend = EMU_ReadInt(GE_matchended);
 		const int mppausemenu = EMU_ReadInt(playerbase[player] + GE_multipausemenu);
-		const int cursoraimingflag = PROFILE[player].SETTINGS[GEAIMMODE] && aimingflag ? 1 : 0;
+		const int cursoraimingflag = PROFILE[player].SETTINGS[GEAIMMODE] && aimingflag;
 		const float fov = EMU_ReadFloat(playerbase[player] + GE_fov);
 		const float basefov = fov > 60.0f ? (float)overridefov : 60.0f;
 		const float mouseaccel = PROFILE[player].SETTINGS[ACCELERATION] ? sqrt(DEVICE[player].XPOS * DEVICE[player].XPOS + DEVICE[player].YPOS * DEVICE[player].YPOS) / TICKRATE / 12.0f * PROFILE[player].SETTINGS[ACCELERATION] : 0;

@@ -177,7 +177,7 @@ static void PD_Inject(void)
 		const int aimingflag = EMU_ReadInt(playerbase[player] + PD_aimingflag);
 		const int grabflag = EMU_ReadInt(playerbase[player] + PD_grabflag);
 		const int thirdperson = EMU_ReadInt(playerbase[player] + PD_thirdperson);
-		const int cursoraimingflag = PROFILE[player].SETTINGS[PDAIMMODE] && aimingflag ? 1 : 0;
+		const int cursoraimingflag = PROFILE[player].SETTINGS[PDAIMMODE] && aimingflag;
 		const float fov = EMU_ReadFloat(playerbase[player] + PD_fov);
 		const float basefov = fov >= 60.0f ? (float)overridefov : 60.0f;
 		const float mouseaccel = PROFILE[player].SETTINGS[ACCELERATION] ? sqrt(DEVICE[player].XPOS * DEVICE[player].XPOS + DEVICE[player].YPOS * DEVICE[player].YPOS) / TICKRATE / 12.0f * PROFILE[player].SETTINGS[ACCELERATION] : 0;
