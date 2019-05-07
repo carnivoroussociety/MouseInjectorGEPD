@@ -99,7 +99,7 @@ DWORD WINAPI DEV_InjectThread()
 	}
 	while(!stopthread)
 	{
-		if(mousetoggle && lockmousecounter % 5 == 0) // don't execute every tick
+		if(mousetoggle && lockmousecounter % (emuoverclock ? 5 : 2) == 0) // don't execute every tick
 			SetCursorPos(lockpos.x, lockpos.y); // set mouse position to lock position
 		lockmousecounter++; // overflow pseudo-counter
 		if(togglebuffer > 0)
