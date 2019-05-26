@@ -301,7 +301,7 @@ static void PD_AimMode(const int player, const int aimingflag, const float fov, 
 	const float crosshairx = EMU_ReadFloat(playerbase[player] + PD_crosshairx), crosshairy = EMU_ReadFloat(playerbase[player] + PD_crosshairy);
 	const int gunrreload = EMU_ReadInt(playerbase[player] + PD_gunrstate) == 1, gunlreload = EMU_ReadInt(playerbase[player] + PD_gunlstate) == 1, unarmed = EMU_ReadInt(playerbase[player] + PD_currentweapon) < 2;
 	const float fovratio = fov / basefov, fovmodifier = basefov / 60.f; // basefov is 60 unless override is above 60
-	const float threshold = 0.72f, speed = 475.f, sensitivity = 100.f * fovmodifier, centertime = 60.f * fovmodifier;
+	const float threshold = 0.72f, speed = 475.f, sensitivity = 100.f * fovmodifier, centertime = 60.f;
 	if(aimingflag) // if player is aiming
 	{
 		const float mouseaccel = PROFILE[player].SETTINGS[ACCELERATION] ? sqrt(DEVICE[player].XPOS * DEVICE[player].XPOS + DEVICE[player].YPOS * DEVICE[player].YPOS) / TICKRATE / 12.0f * PROFILE[player].SETTINGS[ACCELERATION] : 0;
