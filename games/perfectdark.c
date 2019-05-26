@@ -84,7 +84,7 @@ static void PD_Crouch(const int player);
 #define PD_ResetCrouchToggle(X) safetoduck[X] = 1, safetostand[X] = 0, crouchstance[X] = 0 // reset crouch toggle bind
 #define PD_ResetXYStick(X) xstick[X] = 0, ystick[X] = 0, usingstick[X] = 0 // reset x/y stick array
 #define PD_ResetRadialMenuBtns(X) for(int direction = 0; direction < 4; direction++) radialmenudirection[X][direction] = 0 // reset direction buttons
-static void PD_AimMode(const int player, const int aimingflag, const float fov);
+static void PD_AimMode(const int player, const int aimingflag, const float fov, const float basefov);
 static void PD_CamspySlayer(const int player, const int camspyflag, const float sensitivity);
 static void PD_RadialMenuNav(const int player);
 static void PD_Controller(void);
@@ -109,9 +109,7 @@ const GAMEDRIVER *GAME_PERFECTDARK = &GAMEDRIVER_INTERFACE;
 static int PD_Status(void)
 {
 	const int pd_menu = EMU_ReadInt(PD_menu(PLAYER1)), pd_camera = EMU_ReadInt(PD_camera), pd_pause = EMU_ReadInt(PD_pause), pd_romcheck = EMU_ReadInt(PD_menuitem);
-	if(pd_menu >= 0 && pd_menu <= 1 && pd_camera >= 0 && pd_camera <= 7 && pd_pause >= 0 && pd_pause <= 1 && pd_romcheck == 0x04010000)
-		return 1;
-	return 0;
+	return (pd_menu >= 0 && pd_menu <= 1 && pd_camera >= 0 && pd_camera <= 7 && pd_pause >= 0 && pd_pause <= 1 && pd_romcheck == 0x04010000); // if Perfect Dark is current game
 }
 //==========================================================================
 // Purpose: searches for the current map memory locations
@@ -179,7 +177,7 @@ static void PD_Inject(void)
 		const int thirdperson = EMU_ReadInt(playerbase[player] + PD_thirdperson);
 		const int cursoraimingflag = PROFILE[player].SETTINGS[PDAIMMODE] && aimingflag;
 		const float fov = EMU_ReadFloat(playerbase[player] + PD_fov);
-		const float basefov = fov >= 60.0f ? (float)overridefov : 60.0f;
+		const float basefov = fov > 60.0f ? (float)overridefov : 60.0f;
 		const float mouseaccel = PROFILE[player].SETTINGS[ACCELERATION] ? sqrt(DEVICE[player].XPOS * DEVICE[player].XPOS + DEVICE[player].YPOS * DEVICE[player].YPOS) / TICKRATE / 12.0f * PROFILE[player].SETTINGS[ACCELERATION] : 0;
 		const float sensitivity = PROFILE[player].SETTINGS[SENSITIVITY] / 40.0f * fmax(mouseaccel, 1);
 		const float gunsensitivity = sensitivity * (PROFILE[player].SETTINGS[CROSSHAIR] / 2.5f);
@@ -191,7 +189,7 @@ static void PD_Inject(void)
 				PD_CamspySlayer(player, thirdperson == 2, sensitivity);
 				continue;
 			}
-			PD_AimMode(player, cursoraimingflag, fov / basefov);
+			PD_AimMode(player, cursoraimingflag, fov, basefov);
 			if(grabflag != 3) // if player is on foot
 			{
 				PD_Crouch(player);
@@ -298,11 +296,12 @@ static void PD_Crouch(const int player)
 // Purpose: replicate the original aiming system, uses aimx/y to move screen when crosshair is on border of screen
 // Changes Globals: crosshairposx, crosshairposy, gunrcenter, gunlcenter, aimx, aimy
 //==========================================================================
-static void PD_AimMode(const int player, const int aimingflag, const float fov)
+static void PD_AimMode(const int player, const int aimingflag, const float fov, const float basefov)
 {
 	const float crosshairx = EMU_ReadFloat(playerbase[player] + PD_crosshairx), crosshairy = EMU_ReadFloat(playerbase[player] + PD_crosshairy);
 	const int gunrreload = EMU_ReadInt(playerbase[player] + PD_gunrstate) == 1, gunlreload = EMU_ReadInt(playerbase[player] + PD_gunlstate) == 1, unarmed = EMU_ReadInt(playerbase[player] + PD_currentweapon) < 2;
-	const float threshold = 0.72f, speed = 475.f, sensitivity = 100.f, centertime = 60.f;
+	const float fovratio = fov / basefov, fovmodifier = basefov / 60.f; // basefov is 60 unless override is above 60
+	const float threshold = 0.72f, speed = 475.f, sensitivity = 100.f * fovmodifier, centertime = 60.f * fovmodifier;
 	if(aimingflag) // if player is aiming
 	{
 		const float mouseaccel = PROFILE[player].SETTINGS[ACCELERATION] ? sqrt(DEVICE[player].XPOS * DEVICE[player].XPOS + DEVICE[player].YPOS * DEVICE[player].YPOS) / TICKRATE / 12.0f * PROFILE[player].SETTINGS[ACCELERATION] : 0;
@@ -324,14 +323,14 @@ static void PD_AimMode(const int player, const int aimingflag, const float fov)
 			gunrcenter[player] = 0;
 		if(gunlcenter[player] < 0)
 			gunlcenter[player] = 0;
-		EMU_WriteFloat(playerbase[player] + PD_gunrx, (gunrcenter[player] / centertime) * (crosshairposx[player] * 0.75f) + fov - 1); // calculate and inject the gun angles
-		EMU_WriteFloat(playerbase[player] + PD_gunrxrecoil, crosshairposx[player] * (GUNRECOILXLIMIT / CROSSHAIRLIMIT)); // set the recoil to the correct rotation (if we don't, then the recoil is always z axis aligned)
-		EMU_WriteFloat(playerbase[player] + PD_gunry, (gunrcenter[player] / centertime) * (crosshairposy[player] * 0.66f) + fov - 1);
-		EMU_WriteFloat(playerbase[player] + PD_gunryrecoil, crosshairposy[player] * (GUNRECOILYLIMIT / CROSSHAIRLIMIT));
-		EMU_WriteFloat(playerbase[player] + PD_gunlx, (gunlcenter[player] / centertime) * (crosshairposx[player] * 0.75f) + fov - 1);
-		EMU_WriteFloat(playerbase[player] + PD_gunlxrecoil, crosshairposx[player] * (GUNRECOILXLIMIT / CROSSHAIRLIMIT));
-		EMU_WriteFloat(playerbase[player] + PD_gunly, (gunlcenter[player] / centertime) * (crosshairposy[player] * 0.66f) + fov - 1);
-		EMU_WriteFloat(playerbase[player] + PD_gunlyrecoil, crosshairposy[player] * (GUNRECOILYLIMIT / CROSSHAIRLIMIT));
+		EMU_WriteFloat(playerbase[player] + PD_gunrx, (gunrcenter[player] / centertime) * (crosshairposx[player] * 0.75f) + fovratio - 1); // calculate and inject the gun angles
+		EMU_WriteFloat(playerbase[player] + PD_gunrxrecoil, crosshairposx[player] * (GUNRECOILXLIMIT / CROSSHAIRLIMIT) * fovmodifier); // set the recoil to the correct rotation (if we don't, then the recoil is always z axis aligned)
+		EMU_WriteFloat(playerbase[player] + PD_gunry, (gunrcenter[player] / centertime) * (crosshairposy[player] * 0.66f) + fovratio - 1);
+		EMU_WriteFloat(playerbase[player] + PD_gunryrecoil, crosshairposy[player] * (GUNRECOILYLIMIT / CROSSHAIRLIMIT) * fovmodifier);
+		EMU_WriteFloat(playerbase[player] + PD_gunlx, (gunlcenter[player] / centertime) * (crosshairposx[player] * 0.75f) + fovratio - 1);
+		EMU_WriteFloat(playerbase[player] + PD_gunlxrecoil, crosshairposx[player] * (GUNRECOILXLIMIT / CROSSHAIRLIMIT) * fovmodifier);
+		EMU_WriteFloat(playerbase[player] + PD_gunly, (gunlcenter[player] / centertime) * (crosshairposy[player] * 0.66f) + fovratio - 1);
+		EMU_WriteFloat(playerbase[player] + PD_gunlyrecoil, crosshairposy[player] * (GUNRECOILYLIMIT / CROSSHAIRLIMIT) * fovmodifier);
 		if(crosshairx > 0 && crosshairx / CROSSHAIRLIMIT > threshold) // if crosshair is within threshold of the border then calculate a linear scrolling speed and enable mouselook
 			aimx[player] = (crosshairx / CROSSHAIRLIMIT - threshold) * speed * TIMESTEP;
 		else if(crosshairx < 0 && crosshairx / CROSSHAIRLIMIT < -threshold)

@@ -72,7 +72,7 @@ static void GE_DetectMap(void);
 static void GE_Inject(void);
 static void GE_Crouch(const int player);
 #define GE_ResetCrouchToggle(X) safetoduck[X] = 1, safetostand[X] = 0, crouchstance[X] = 0 // reset crouch toggle bind
-static void GE_AimMode(const int player, const int aimingflag, const float fov);
+static void GE_AimMode(const int player, const int aimingflag, const float fov, const float basefov);
 static void GE_Controller(void);
 static void GE_InjectHacks(void);
 static void GE_SortArray(int *a, const int n);
@@ -97,9 +97,7 @@ static int GE_Status(void)
 {
 	const int ge_camera = EMU_ReadInt(GE_camera), ge_page = EMU_ReadInt(GE_menupage), ge_pause = EMU_ReadInt(GE_pause), ge_exit = EMU_ReadInt(GE_exit);
 	const float ge_crosshairx = EMU_ReadFloat(GE_menux), ge_crosshairy = EMU_ReadFloat(GE_menuy);
-	if(ge_camera >= 0 && ge_camera <= 10 && ge_page >= -1 && ge_page <= 25 && ge_pause >= 0 && ge_pause <= 1 && ge_exit >= 0 && ge_exit <= 1 && ge_crosshairx >= 20 && ge_crosshairx <= 420 && ge_crosshairy >= 20 && ge_crosshairy <= 310) // if GoldenEye 007 is current game
-		return 1;
-	return 0;
+	return (ge_camera >= 0 && ge_camera <= 10 && ge_page >= -1 && ge_page <= 25 && ge_pause >= 0 && ge_pause <= 1 && ge_exit >= 0 && ge_exit <= 1 && ge_crosshairx >= 20 && ge_crosshairx <= 420 && ge_crosshairy >= 20 && ge_crosshairy <= 310); // if GoldenEye 007 is current game
 }
 //==========================================================================
 // Purpose: searches for the current map memory locations
@@ -149,7 +147,7 @@ static void GE_DetectMap(void)
 // Q: Could you explain !aimingflag ? 10.0f : 40.0f
 // A: While the player is aiming weapon sway will be reduced by 75%. While this is not in the original design of GE/PD I feel it gives a legitimate advantage for aiming instead of only making the crosshair visible
 // Q: Could you explain basefov = fov > 60.0f ? (float)overridefov : 60.0f
-// A: For weapons that zoom, the fov is lower than 60 - when this happens we will compute our calculations using 60 as a base. This is to prevent weapons from becoming too sluggish to move while zoomed with a high override fov
+// A: For weapons that zoom, the fov is lower than 60 - when this happens we compute our calculations using 60 as a base instead of the override fov. This is to prevent weapons from becoming too sluggish to move while zoomed with a high override fov
 // Q: Could you explain if(aimingflag) gunx /= emuoverclock ? 1.03f : 1.07f, crosshairx /= emuoverclock ? 1.03f : 1.07f;
 // A: GE_InjectHacks() disables the engine from overwriting the crosshair pos and gun rot - this is so aiming is jitter free. But it removed the auto centering code while aiming. If the player turns off cursor aiming for GE, the crosshair and gun will no longer move back to the center (it'll float to the corners of the screen). This if statement will emulate the centering code. The emuoverclock condition will make the scale the same - regardless of overclock or stock (inject exec at higher tickrate if overclocked).
 //==========================================================================
@@ -181,7 +179,7 @@ static void GE_Inject(void)
 		float camx = EMU_ReadFloat(playerbase[player] + GE_camx), camy = EMU_ReadFloat(playerbase[player] + GE_camy);
 		if(camx >= 0 && camx <= 360 && camy >= -90 && camy <= 90 && fov >= 1 && fov <= 120 && dead == 0 && watch == 0 && pause == 0 && (camera == 4 || camera == 0) && exit == 1 && menupage == 11 && !mproundend && !mppausemenu) // if safe to inject
 		{
-			GE_AimMode(player, cursoraimingflag, fov / basefov);
+			GE_AimMode(player, cursoraimingflag, fov, basefov);
 			if(!tankflag) // player is on foot
 			{
 				GE_Crouch(player); // only allow crouching if player is not in tank
@@ -286,11 +284,12 @@ static void GE_Crouch(const int player)
 // Purpose: replicate the original aiming system, uses aimx/y to move screen when crosshair is on border of screen
 // Changes Globals: crosshairposx, crosshairposy, aimx, aimy
 //==========================================================================
-static void GE_AimMode(const int player, const int aimingflag, const float fov)
+static void GE_AimMode(const int player, const int aimingflag, const float fov, const float basefov)
 {
 	const float crosshairx = EMU_ReadFloat(playerbase[player] + GE_crosshairx), crosshairy = EMU_ReadFloat(playerbase[player] + GE_crosshairy), offsetpos[2][33] = {{0, 0, 0, 0, 0.1625, 0.1625, 0.15, 0.5, 0.8, 0.4, 0.5, 0.5, 0.48, 0.9, 0.25, 0.6, 0.6, 0.7, 0.25, 0.15, 0.1625, 0.1625, 0.5, 0.5, 0.9, 0.9, 0, 0, 0, 0, 0, 0.4}, {0, 0, 0, 0, 0.1, 0.1, 0.2, 0.325, 1, 0.3, 0.425, 0.425, 0.45, 0.95, 0.1, 0.55, 0.5, 0.7, 0.25, 0.1, 0.1, 0.1, 0.275, 1, 0.9, 0.8, 0, 0, 0, 0, 0, 0.25}}; // table of X/Y offset for weapons
 	const int currentweapon = EMU_ReadInt(playerbase[player] + GE_currentweapon);
-	const float threshold = 0.72f, speed = 475.f, sensitivity = 292.f;
+	const float fovratio = fov / basefov, fovmodifier = basefov / 60.f; // basefov is 60 unless override is above 60
+	const float threshold = 0.72f, speed = 475.f, sensitivity = 292.f * fovmodifier;
 	const int aimingintank = EMU_ReadInt(GE_tankflag) == 1 && currentweapon == 32; // flag if player is driving tank with tank equipped as weapon
 	if(aimingflag) // if player is aiming
 	{
@@ -303,8 +302,8 @@ static void GE_AimMode(const int player, const int aimingflag, const float fov)
 			crosshairposx[player] = 0;
 		EMU_WriteFloat(playerbase[player] + GE_crosshairx, crosshairposx[player]);
 		EMU_WriteFloat(playerbase[player] + GE_crosshairy, crosshairposy[player]);
-		EMU_WriteFloat(playerbase[player] + GE_gunx, crosshairposx[player] * (1.11f + (currentweapon >= 0 && currentweapon <= 32 ? offsetpos[0][currentweapon] : 0.15f) * 1.5f) + fov - 1); // calculate and inject the gun angles (uses pre-made pos table or if unknown weapon use fail-safe value)
-		EMU_WriteFloat(playerbase[player] + GE_guny, crosshairposy[player] * (1.11f + (currentweapon >= 0 && currentweapon <= 32 ? offsetpos[1][currentweapon] : 0) * 1.5f) + fov - 1);
+		EMU_WriteFloat(playerbase[player] + GE_gunx, crosshairposx[player] * (1.11f + (currentweapon >= 0 && currentweapon <= 32 ? offsetpos[0][currentweapon] : 0.15f) * 1.5f) + fovratio - 1); // calculate and inject the gun angles (uses pre-made pos table or if unknown weapon use fail-safe value)
+		EMU_WriteFloat(playerbase[player] + GE_guny, crosshairposy[player] * (1.11f + (currentweapon >= 0 && currentweapon <= 32 ? offsetpos[1][currentweapon] : 0) * 1.5f) + fovratio - 1);
 		if(crosshairx > 0 && crosshairx / CROSSHAIRLIMIT > threshold) // if crosshair is within threshold of the border then calculate a linear scrolling speed and enable mouselook
 			aimx[player] = (crosshairx / CROSSHAIRLIMIT - threshold) * speed * TIMESTEP;
 		else if(crosshairx < 0 && crosshairx / CROSSHAIRLIMIT < -threshold)
