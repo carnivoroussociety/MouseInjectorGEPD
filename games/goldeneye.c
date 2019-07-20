@@ -367,7 +367,7 @@ static void GE_InjectHacks(void)
 		EMU_WriteROM(GE_defaultfov, 0x3C010000 + (short)(unsignedinteger / 0x10000));
 		EMU_WriteROM(GE_defaultfovinit, 0x3C010000 + (short)(unsignedinteger / 0x10000));
 		EMU_WriteROM(GE_defaultfovzoom, 0x3C010000 + (short)(unsignedinteger / 0x10000));
-		if(EMU_ReadInt(GE_weaponypos) == EMU_ReadInt(GE_weaponzpos) && EMU_ReadInt(GE_weaponypos) == 0) // if first weapon slot position is default
+		if(EMU_ReadInt(GE_weaponypos) == 0 && EMU_ReadInt(GE_weaponzpos) == 0) // if first weapon slot position is default
 		{
 			for(int index = 0; index <= 32; index++) // cycle through first 32 weapons
 			{
