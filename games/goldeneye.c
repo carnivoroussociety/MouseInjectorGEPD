@@ -62,6 +62,8 @@
 #define GE_introcounter 0x8002A8CC // counter for intro
 #define GE_seenintroflag 0x8002A930 // seen intro flag
 #define GE_pickupyaxisthreshold 0x800532E0 // y axis threshold on picking up weapons
+#define GE_weaponypos 0x8003249C // y axis position for view models
+#define GE_weaponzpos (GE_weaponypos + 4) // z axis position for view models
 
 static unsigned int playerbase[4] = {0, 0, 0, 0}; // current player's bonddata address
 static int safetoduck[4] = {1, 1, 1, 1}, safetostand[4] = {0, 0, 0, 0}, crouchstance[4] = {0, 0, 0, 0}; // used for crouch toggle changes (limits tick-tocking)
@@ -365,6 +367,17 @@ static void GE_InjectHacks(void)
 		EMU_WriteROM(GE_defaultfov, 0x3C010000 + (short)(unsignedinteger / 0x10000));
 		EMU_WriteROM(GE_defaultfovinit, 0x3C010000 + (short)(unsignedinteger / 0x10000));
 		EMU_WriteROM(GE_defaultfovzoom, 0x3C010000 + (short)(unsignedinteger / 0x10000));
+		if(EMU_ReadInt(GE_weaponypos) == EMU_ReadInt(GE_weaponzpos) && EMU_ReadInt(GE_weaponypos) == 0) // if first weapon slot position is default
+		{
+			for(int index = 0; index <= 32; index++) // cycle through first 32 weapons
+			{
+				const float fovoffset = overridefov - 60;
+				const float weaponypos = EMU_ReadFloat(GE_weaponypos + (index * 0x70)) - (fovoffset / (2.25f * 4.f)); // adjust weapon Y/Z positions for override field of view
+				const float weaponzpos = EMU_ReadFloat(GE_weaponzpos + (index * 0x70)) + (fovoffset / 2.75f);
+				EMU_WriteFloat(GE_weaponypos + (index * 0x70), weaponypos);
+				EMU_WriteFloat(GE_weaponzpos + (index * 0x70), weaponzpos);
+			}
+		}
 #ifndef SPEEDRUN_BUILD // gives unfair advantage, remove for speedrun build
 		if(overridefov > 60)
 			EMU_WriteFloat(GE_defaultzoomspeed, (overridefov - 60) * ((1.7f - 0.909091f) / 60.0f) + 0.909091f); // adjust zoom speed default (0.909091 default, 1.7 max)

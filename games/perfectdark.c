@@ -57,8 +57,8 @@
 #define PD_bikeroll 0x8052D69C - 0x8052D64C
 #define PD_bikespeed 0x8052D694 - 0x8052D64C
 // STATIC ADDRESSES BELOW
-#define JOANNADATA(X) (unsigned int)EMU_ReadInt(0x8009A024 + X * 0x4) // player pointer address (0x4 offset for each players)
-#define PD_menu(X) 0x80070750 + X * 0x4 // player menu flag (0 = PD is in menu) (0x4 offset for each players)
+#define JOANNADATA(X) (unsigned int)EMU_ReadInt(0x8009A024 + (X * 0x4)) // player pointer address (0x4 offset for each players)
+#define PD_menu(X) 0x80070750 + (X * 0x4) // player menu flag (0 = PD is in menu) (0x4 offset for each players)
 #define PD_camera 0x8009A26C // camera flag (1 = gameplay, 2 & 3 = ???, 4 = multiplayer sweep, 5 = gameover screen, 6 = cutscene mode, 7 = force player to move: extraction's dark room)
 #define PD_pause 0x80084014 // menu flag (1 = PD is paused)
 #define PD_menuitem 0x800739F8 // menu item flag (used to check if PD is running)
@@ -67,6 +67,7 @@
 #define PD_defaultfovzoom 0x802EACFC // field of view default for zoom
 #define PD_introcounter 0x800624C4 // counter for intro
 #define PD_pickupyaxisthreshold 0x803CAE78 // y axis threshold on picking up weapons
+#define PD_weapontable 0x8006FF1C // weapon pointer table, used to change view model positions
 
 static unsigned int playerbase[4] = {0, 0, 0, 0}; // current player's joannadata address
 static unsigned int bikebase[4][2] = {{0, 0}, {0, 0}, {0, 0}, {0, 0}}; // hoverbike's address and player's last grab state (used to find the exact moment when the player hops on a bike)
@@ -461,6 +462,19 @@ static void PD_InjectHacks(void)
 		unsigned int unsignedinteger = *(unsigned int *)(float *)(&newfov);
 		EMU_WriteInt(PD_defaultfov, 0x3C010000 + (short)(unsignedinteger / 0x10000));
 		EMU_WriteInt(PD_defaultfovzoom, 0x3C010000 + (short)(unsignedinteger / 0x10000));
+		if((unsigned int)EMU_ReadInt(EMU_ReadInt(PD_weapontable) + 0x30) == 0xC2240000) // if first weapon slot position is default
+		{
+			for(int index = 0; index < 64; index++) // cycle through first 64 weapons
+			{
+				const unsigned int weaponptr = EMU_ReadInt(PD_weapontable + (index * 4)); // get pointer for weapon slot
+				const float fovoffset = overridefov - 60;
+				const float weaponypos = EMU_ReadFloat(weaponptr + 0x30) - (fovoffset / (2.75f * 4.f)); // adjust weapon Y/Z positions for override field of view
+				const float weaponzpos = EMU_ReadFloat(weaponptr + 0x34) + (fovoffset / 3.f);
+				EMU_WriteFloat(weaponptr + 0x30, weaponypos);
+				EMU_WriteFloat(weaponptr + 0x34, weaponzpos);
+			}
+		}
+
 	}
 	if(CONTROLLER[PLAYER1].Z_TRIG && CONTROLLER[PLAYER1].R_TRIG) // skip intros if holding down fire + aim
 		EMU_WriteInt(PD_introcounter, 0x00001000);

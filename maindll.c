@@ -435,7 +435,7 @@ static void GUI_Refresh(const HWND hW, const int revertbtn)
 			SetDlgItemText(hW, IDC_FOV_NOTE, "Below Default");
 		else if(overridefov == 60)
 			SetDlgItemText(hW, IDC_FOV_NOTE, "Default FOV");
-		else if(overridefov <= 75)
+		else if(overridefov <= 80)
 			SetDlgItemText(hW, IDC_FOV_NOTE, "Above Default");
 		else if(overridefov <= 90)
 			SetDlgItemText(hW, IDC_FOV_NOTE, "Breaks ViewModels");
