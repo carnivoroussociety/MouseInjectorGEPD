@@ -364,8 +364,8 @@ static void GUI_Init(const HWND hW)
 	SendMessage(GetDlgItem(hW, IDC_SLIDER01), TBM_SETRANGEMAX, 0, 5);
 	SendMessage(GetDlgItem(hW, IDC_SLIDER02), TBM_SETRANGEMIN, 0, 0);
 	SendMessage(GetDlgItem(hW, IDC_SLIDER02), TBM_SETRANGEMAX, 0, 18);
-	SendMessage(GetDlgItem(hW, IDC_FOV), TBM_SETRANGEMIN, 0, 40);
-	SendMessage(GetDlgItem(hW, IDC_FOV), TBM_SETRANGEMAX, 0, 120);
+	SendMessage(GetDlgItem(hW, IDC_FOV), TBM_SETRANGEMIN, 0, FOV_MIN);
+	SendMessage(GetDlgItem(hW, IDC_FOV), TBM_SETRANGEMAX, 0, FOV_MAX);
 #ifdef SPEEDRUN_BUILD // replace info box with details about the speedrun build
 	SetDlgItemText(hW, IDC_INFO, "The speedrun build removes the FOV zoom speed adjustment for GE. This is to ensure all players will have the same watch/weapon zoom speed regardless of their FOV setting.\n\nIt also removes Y axis pickup threshold adjustment for GE/PD so it's the original value (-45 degrees).");
 #endif
@@ -647,7 +647,7 @@ static void INI_Load(const HWND hW, const int loadplayer)
 			{
 				if(loadplayer == ALLPLAYERS) // only load if given ALLPLAYERS flag
 				{
-					overridefov = ClampInt(atoi(line[TOTALLINES - 5]), 40, 120); // load overridefov
+					overridefov = ClampInt(atoi(line[TOTALLINES - 5]), FOV_MIN, FOV_MAX); // load overridefov
 					geshowcrosshair = !(!atoi(line[TOTALLINES - 4])); // load geshowcrosshair
 					mouselockonfocus = !(!atoi(line[TOTALLINES - 3])); // load mouselockonfocus
 					mouseunlockonloss = !(!atoi(line[TOTALLINES - 2])); // load mouseunlockonloss
