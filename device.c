@@ -52,24 +52,29 @@ int DEV_TypeIndex(const int id);
 int DEV_TypeID(const int id, const int devicetype);
 
 //==========================================================================
-// Purpose: First called upon device launch
+// Purpose: First called upon device launch, returns total connected ms/kb
 // Changes Globals: alreadyexec, connected
 //==========================================================================
 int DEV_Init(void)
 {
-	if(alreadyexec)
-		return connected > 1 ? connected : 0;
-	alreadyexec = 1;
-	connected = ManyMouse_Init();
-	int activemice = 0, activekeyboards = 0;
-	for(int index = 0; index < connected; index++)
-		if(DEV_Type(index) == MOUSETYPE)
-			activemice = 1; 
-		else
-			activekeyboards = 1;
-	if(!activemice || !activekeyboards) // fail if mouse or keyboard not detected (mouse and keyboard are required for this plugin)
-		connected = 0;
-	return connected > 1 ? connected : 0;
+	if(!alreadyexec)
+	{
+		alreadyexec = 1;
+		connected = ManyMouse_Init();
+		int activemice = 0, activekeyboards = 0;
+		for(int index = 0; index < connected; index++)
+		{
+			if(DEV_Type(index) == MOUSETYPE)
+				activemice = 1; 
+			else
+				activekeyboards = 1;
+		}
+		if(!activemice || !activekeyboards) // fail if mouse or keyboard not detected (mouse and keyboard are required for this plugin)
+			connected = 0;
+	}
+	if(connected >= 2) // if at least one mouse and keyboard are detected
+		return connected;
+	return 0;
 }
 //==========================================================================
 // Purpose: Safely close ManyMouse

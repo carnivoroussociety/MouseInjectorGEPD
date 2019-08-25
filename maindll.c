@@ -635,6 +635,7 @@ static void INI_Load(const HWND hW, const int loadplayer)
 			for(int player = PLAYER1; player < ALLPLAYERS; player++) // load settings block first because if using WASD/ESDF config don't bother loading custom keys (settings are stored at end of file)
 			{
 				for(int index = 0; index < 10; index++)
+				{
 					if(everythingisfine && atoi(line[BUTTONBLKSIZE + (player * 10) + index]) >= safesettings[0][index] && atoi(line[BUTTONBLKSIZE + (player * 10) + index]) <= safesettings[1][index]) // if everything is fine
 					{
 						if(loadplayer == ALLPLAYERS || player == loadplayer) // load everything if given ALLPLAYERS flag or filter loading to current player
@@ -642,6 +643,7 @@ static void INI_Load(const HWND hW, const int loadplayer)
 					}
 					else // invalid settings, abort (this isn't fine)
 						everythingisfine = 0;
+				}
 			}
 			if(everythingisfine) // if settings block is OK
 			{
