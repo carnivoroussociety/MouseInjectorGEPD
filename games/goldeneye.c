@@ -17,7 +17,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, visit http://www.gnu.org/licenses/gpl-2.0.html
 //==========================================================================
-#include <windows.h>
 #include <math.h>
 #include "../global.h"
 #include "../maindll.h"
@@ -43,7 +42,7 @@
 #define GE_currentweapon 0x800D37D0 - 0x800D2F60
 #define GE_multipausemenu 0x800A9D24 - 0x800A7360
 // STATIC ADDRESSES BELOW
-#define BONDDATA (unsigned int)EMU_ReadInt(0x8007A0B0) // playable character point (used for all players)
+#define BONDDATA(X) (unsigned int)EMU_ReadInt(0x80079EE0 + (X * 0x4)) // player pointer address (0x4 offset for each players)
 #define GE_camera 0x80036494 // camera flag (0 = multiplayer, 1 = map overview, 2 = start flyby, 3 = in flyby, 4 = player in control, 5 = trigger restart map)
 #define GE_exit 0x800364B0 // exit flag (0 = disable controls, 1 = enable controls)
 #define GE_pause 0x80048370 // pause flag (1 = GE is paused)
@@ -77,7 +76,6 @@ static void GE_Crouch(const int player);
 static void GE_AimMode(const int player, const int aimingflag, const float fov, const float basefov);
 static void GE_Controller(void);
 static void GE_InjectHacks(void);
-static void GE_SortArray(int *a, const int n);
 static void GE_Quit(void);
 
 static const GAMEDRIVER GAMEDRIVER_INTERFACE =
@@ -107,39 +105,12 @@ static int GE_Status(void)
 //==========================================================================
 static void GE_DetectMap(void)
 {
-	if(playerbase[PLAYER1] != BONDDATA && (EMU_ReadInt(GE_camera) == 1 || EMU_ReadInt(GE_camera) == 4 || EMU_ReadInt(GE_camera) == 9))
+	if(playerbase[PLAYER1] != BONDDATA(PLAYER1) && (EMU_ReadInt(GE_camera) == 1 || EMU_ReadInt(GE_camera) == 4 || EMU_ReadInt(GE_camera) == 9))
 	{
-		unsigned int pointerdump[128];
-		for(int player = PLAYER1; player < ALLPLAYERS; player++)
+		for(int player = 0; player < ALLPLAYERS; player++)
 		{
-			playerbase[player] = 0; // reset playerbase for all players
+			playerbase[player] = BONDDATA(player); // load player pointer
 			GE_ResetCrouchToggle(player); // reset crouch toggle on new map
-		}
-		for(int index = 0; index < 128; index++)
-		{
-			pointerdump[index] = BONDDATA;
-			Sleep(1);
-		}
-		GE_SortArray((int *)pointerdump, sizeof pointerdump / sizeof pointerdump[0]);
-		playerbase[PLAYER1] = pointerdump[0];
-		int playerfound = PLAYER1;
-		for(int index = 0; index < 128; index++)
-		{
-			if(playerbase[PLAYER1] != pointerdump[index] && playerfound == PLAYER1)
-			{
-				playerbase[PLAYER2] = pointerdump[index];
-				playerfound = PLAYER2;
-			}
-			else if(playerbase[PLAYER2] != pointerdump[index] && playerfound == PLAYER2)
-			{
-				playerbase[PLAYER3] = pointerdump[index];
-				playerfound = PLAYER3;
-			}
-			else if(playerbase[PLAYER3] != pointerdump[index] && playerfound == PLAYER3)
-			{
-				playerbase[PLAYER4] = pointerdump[index];
-				break;
-			}
 		}
 	}
 }
@@ -394,32 +365,6 @@ static void GE_InjectHacks(void)
 		EMU_WriteInt(GE_introcounter, 0x00001000);
 		EMU_WriteInt(GE_seenintroflag, 0);
 	}
-}
-//==========================================================================
-// Purpose: sorting function for pointer scanning
-//==========================================================================
-static void GE_SortArray(int *a, const int n)
-{
-	if(n < 2)
-		return;
-	int p = a[n / 2];
-	int *l = a;
-	int *r = a + n - 1;
-	while(l <= r)
-	{
-		while(*l < p)
-			l++;
-		while(*r > p)
-			r--;
-		if(l <= r)
-		{
-			int t = *l;
-			*l++ = *r;
-			*r-- = t;
-		}
-	}
-	GE_SortArray(a, r - a + 1);
-	GE_SortArray(l, a + n - l);
 }
 //==========================================================================
 // Purpose: run when emulator closes rom
