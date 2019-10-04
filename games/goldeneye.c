@@ -107,7 +107,7 @@ static void GE_DetectMap(void)
 {
 	if(playerbase[PLAYER1] != BONDDATA(PLAYER1) && (EMU_ReadInt(GE_camera) == 1 || EMU_ReadInt(GE_camera) == 4 || EMU_ReadInt(GE_camera) == 9))
 	{
-		for(int player = 0; player < ALLPLAYERS; player++)
+		for(int player = PLAYER1; player < ALLPLAYERS; player++)
 		{
 			playerbase[player] = BONDDATA(player); // load player pointer
 			GE_ResetCrouchToggle(player); // reset crouch toggle on new map
