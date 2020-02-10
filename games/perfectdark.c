@@ -1,7 +1,7 @@
 //==========================================================================
 // Mouse Injector Plugin
 //==========================================================================
-// Copyright (C) 2016-2019 Carnivorous
+// Copyright (C) 2016-2020 Carnivorous
 // All rights reserved.
 //
 // Mouse Injector is free software; you can redistribute it and/or modify it
@@ -198,9 +198,9 @@ static void PD_Inject(void)
 					camx += DEVICE[player].XPOS / 10.0f * sensitivity * (fov / basefov); // regular mouselook calculation
 				else
 					camx += aimx[player] * (fov / basefov); // scroll screen with aimx/aimy
-				if(camx < 0)
+				while(camx < 0)
 					camx += 360;
-				else if(camx >= 360)
+				while(camx >= 360)
 					camx -= 360;
 				EMU_WriteFloat(playerbase[player] + PD_camx, camx);
 			}
@@ -217,9 +217,9 @@ static void PD_Inject(void)
 					bikex -= aimx[player] / (360 / BIKEXROTATIONLIMIT) * (fov / basefov);
 					bikeroll += aimx[player] * sensitivity * (fov / basefov) / 100;
 				}
-				if(bikex < 0)
+				while(bikex < 0)
 					bikex += BIKEXROTATIONLIMIT;
-				else if(bikex >= BIKEXROTATIONLIMIT)
+				while(bikex >= BIKEXROTATIONLIMIT)
 					bikex -= BIKEXROTATIONLIMIT;
 				bikeroll = ClampFloat(bikeroll, -BIKEROLLLIMIT, BIKEROLLLIMIT);
 				EMU_WriteFloat(bikebase[player][0], bikex);

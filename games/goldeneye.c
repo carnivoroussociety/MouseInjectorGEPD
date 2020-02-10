@@ -1,7 +1,7 @@
 //==========================================================================
 // Mouse Injector Plugin
 //==========================================================================
-// Copyright (C) 2016-2019 Carnivorous
+// Copyright (C) 2016-2020 Carnivorous
 // All rights reserved.
 //
 // Mouse Injector is free software; you can redistribute it and/or modify it
@@ -160,9 +160,9 @@ static void GE_Inject(void)
 					camx += DEVICE[player].XPOS / 10.0f * sensitivity * (fov / basefov); // regular mouselook calculation
 				else
 					camx += aimx[player] * (fov / basefov); // scroll screen with aimx/aimy
-				if(camx < 0)
+				while(camx < 0)
 					camx += 360;
-				else if(camx >= 360)
+				while(camx >= 360)
 					camx -= 360;
 				EMU_WriteFloat(playerbase[player] + GE_camx, camx);
 			}
@@ -174,9 +174,9 @@ static void GE_Inject(void)
 					tankx += DEVICE[player].XPOS / 10.0f * sensitivity / (360 / TANKXROTATIONLIMIT * 2.5) * (fov / basefov);
 				else
 					tankx += aimx[player] / (360 / TANKXROTATIONLIMIT * 2.5) * (fov / basefov);
-				if(tankx < 0)
+				while(tankx < 0)
 					tankx += TANKXROTATIONLIMIT;
-				else if(tankx >= TANKXROTATIONLIMIT)
+				while(tankx >= TANKXROTATIONLIMIT)
 					tankx -= TANKXROTATIONLIMIT;
 				EMU_WriteFloat(GE_tankxrot, tankx);
 			}
