@@ -35,6 +35,7 @@
 #define GE_stageid 0x8002A8F4
 #define GE_difficulty 0x8002A8FC
 #define GE_camera 0x80036494
+#define GE_pause 0x80048370
 #define GE_menupage 0x8002A8C0
 #define GE_sptime 0x80079A20
 #define GE_mptime 0x80048394
@@ -45,6 +46,8 @@
 #define PD_stageid 0x800624E4
 #define PD_difficulty 0x80084020
 #define PD_camera 0x8009A26C
+#define PD_pause 0x80084014
+#define PD_mppause 0x800ACBA2
 #define PD_joannadata 0x8009A024
 #define PD_sptime 0x801BD21C - 0x801BB6A0
 #define PD_mptime 0x80084024
@@ -81,19 +84,19 @@ void DRP_Update(void)
 	if(!alreadyexec)
 		DRP_Init();
 	memset(&presence, 0, sizeof(presence)); // set presence struct to 0
-	presence.largeImageText = "N64 emulator for GE/PD";
 	if(GAME_Name() != NULL)
 	{
 		if(EMU_ReadROM(ROMCRC1) == GECRC1 && EMU_ReadROM(ROMCRC2) == GECRC2) // check if official GE rom
 		{
 			presence.largeImageKey = "ge"; // large default icon (not in-game)
+			presence.largeImageText = "GoldenEye 007";
 			if(EMU_ReadInt(GE_menupage) == 11) // if in-game
 			{
 				presence.smallImageKey = "geingame"; // set small icon
 				presence.details = gestagenames[ClampInt(EMU_ReadInt(GE_stageid), 0x00, 0x39)]; // set details to map name (after clamping)
 				int mpflag = EMU_ReadInt(GE_gamemode) == 1; // set to 1 if gamemode is multiplayer (0 = sp, 1 = mp, 2 = cheats)
 				presence.state = !mpflag ? gedifficulty[ClampInt(EMU_ReadInt(GE_difficulty), 0, 3)] : "Multiplayer"; // set difficulty/multiplayer to state
-				if(EMU_ReadInt(GE_camera) == 4 || EMU_ReadInt(GE_camera) == 0) // if in gameplay mode (not intro swirl), calculate time
+				if(EMU_ReadInt(GE_pause) == 0 && (EMU_ReadInt(GE_camera) == 4 || EMU_ReadInt(GE_camera) == 0)) // if in gameplay mode (not intro swirl) and not paused, calculate time
 				{
 					time_t currenttime = time(NULL); // get current time from OS
 					presence.startTimestamp = currenttime - (EMU_ReadInt(!mpflag ? GE_sptime : GE_mptime) / 60); // convert in-game time (60 Hz) to seconds and subtract from current time to get starting time for current map
@@ -114,6 +117,7 @@ void DRP_Update(void)
 		else if(EMU_ReadROM(ROMCRC1) == PDCRC1 && EMU_ReadROM(ROMCRC2) == PDCRC2) // check if official PD rom
 		{
 			presence.largeImageKey = "pd"; // large default icon (not in-game)
+			presence.largeImageText = "Perfect Dark";
 			if(EMU_ReadInt(PD_stageid) >= 0x09 && EMU_ReadInt(PD_stageid) < 0x51) // if stage id is within char array
 			{
 				presence.smallImageKey = "pdingame"; // set small icon
@@ -125,7 +129,7 @@ void DRP_Update(void)
 						if(pdmpstageids[index] == EMU_ReadInt(PD_stageid))
 							mpflag = 1;
 					presence.state = !mpflag ? pddifficulty[ClampInt(EMU_ReadInt(PD_difficulty), 0, 2)] : "Combat Simulator"; // set difficulty/combat simulator to state
-					if(EMU_ReadInt(PD_camera) == 1 || EMU_ReadInt(PD_camera) == 7) // if in gameplay mode (not cutscene), calculate time
+					if(EMU_ReadInt(PD_pause) == 0 && (EMU_ReadInt(PD_camera) == 1 || EMU_ReadInt(PD_camera) == 7)) // if in gameplay mode (not cutscene) and not paused, calculate time
 					{
 						time_t currenttime = time(NULL); // get current time from OS
 						int gametime;
@@ -150,27 +154,29 @@ void DRP_Update(void)
 			{
 				case 0x45522020: // if GF rom hack
 					presence.largeImageKey = "gfcustom";
-					presence.details = "Goldfinger 64";
+					presence.largeImageText = "GoldFinger 64";
 					break;
 				case 0x65205820: // if GEX rom hack
 					presence.largeImageKey = "gexcustom";
-					presence.details = "GoldenEye X";
+					presence.largeImageText = "GoldenEye X";
 					break;
 				case 0x45202020: // if GE rom hack
 					presence.largeImageKey = "custom";
-					presence.details = "Custom GE ROM";
+					presence.largeImageText = "Custom ROM Hack";
 					break;
 				default: // assume PD rom hack
 					presence.largeImageKey = "pdcustom";
-					presence.details = "Custom PD ROM";
+					presence.largeImageText = "Custom ROM Hack";
 					break;
 			}
+			presence.details = presence.largeImageText;
 		}
 	}
 	else
 	{
 		presence.largeImageKey = "logo"; // default 1964 icon
-		presence.details = "Not in-game";
+		presence.largeImageText = "N64 Emulator for GE/PD";
+		presence.details = "Not In-Game";
 	}
 	Discord_UpdatePresence(&presence);
 }
