@@ -47,7 +47,6 @@
 #define PD_difficulty 0x80084020
 #define PD_camera 0x8009A26C
 #define PD_pause 0x80084014
-#define PD_mppause 0x800ACBA2
 #define PD_joannadata 0x8009A024
 #define PD_sptime 0x801BD21C - 0x801BB6A0
 #define PD_mptime 0x80084024
