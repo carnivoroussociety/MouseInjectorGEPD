@@ -153,7 +153,7 @@ void DRP_Update(void)
 			{
 				case 0x45522020: // if GF rom hack
 					presence.largeImageKey = "gfcustom";
-					presence.largeImageText = "GoldFinger 64";
+					presence.largeImageText = "Goldfinger 64";
 					break;
 				case 0x65205820: // if GEX rom hack
 					presence.largeImageKey = "gexcustom";
@@ -161,11 +161,11 @@ void DRP_Update(void)
 					break;
 				case 0x45202020: // if GE rom hack
 					presence.largeImageKey = "custom";
-					presence.largeImageText = "Custom ROM Hack";
+					presence.largeImageText = "GoldenEye 007 (ROM Hack)";
 					break;
 				default: // assume PD rom hack
 					presence.largeImageKey = "pdcustom";
-					presence.largeImageText = "Custom ROM Hack";
+					presence.largeImageText = "Perfect Dark (ROM Hack)";
 					break;
 			}
 			presence.details = presence.largeImageText;
