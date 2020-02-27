@@ -100,7 +100,7 @@ static int GE_Status(void)
 	return (ge_camera >= 0 && ge_camera <= 10 && ge_page >= -1 && ge_page <= 25 && ge_pause >= 0 && ge_pause <= 1 && ge_exit >= 0 && ge_exit <= 1 && ge_crosshairx >= 20 && ge_crosshairx <= 420 && ge_crosshairy >= 20 && ge_crosshairy <= 310); // if GoldenEye 007 is current game
 }
 //==========================================================================
-// Purpose: searches for the current map memory locations
+// Purpose: detect map change and update playerbase
 // Changes Globals: playerbase, safetoduck, safetostand, crouchstance
 //==========================================================================
 static void GE_DetectMap(void)

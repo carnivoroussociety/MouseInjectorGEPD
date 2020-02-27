@@ -62,7 +62,7 @@
 #define PD_camera 0x8009A26C // camera flag (1 = gameplay, 2 & 3 = ???, 4 = multiplayer sweep, 5 = gameover screen, 6 = cutscene mode, 7 = force player to move: extraction's dark room)
 #define PD_pause 0x80084014 // menu flag (1 = PD is paused)
 #define PD_menuitem 0x800739F8 // menu item flag (used to check if PD is running)
-#define PD_mppause 0x800ACBA2 // used to check if multiplayer match is paused
+#define PD_mppause 0x800ACBA6 // used to check if multiplayer match is paused
 #define PD_defaultfov 0x802EAA5C // field of view default
 #define PD_defaultfovzoom 0x802EACFC // field of view default for zoom
 #define PD_introcounter 0x800624C4 // counter for intro
@@ -172,7 +172,7 @@ static void PD_Inject(void)
 		const int dead = EMU_ReadInt(playerbase[player] + PD_deathflag);
 		const int menu = EMU_ReadInt(PD_menu(player));
 		const int pause = EMU_ReadInt(PD_pause);
-		const int mppause = EMU_ReadInt(PD_mppause);
+		const int mppause = (EMU_ReadShort(PD_mppause) & 0xFF00);
 		const int aimingflag = EMU_ReadInt(playerbase[player] + PD_aimingflag);
 		const int grabflag = EMU_ReadInt(playerbase[player] + PD_grabflag);
 		const int thirdperson = EMU_ReadInt(playerbase[player] + PD_thirdperson);
@@ -183,7 +183,7 @@ static void PD_Inject(void)
 		const float sensitivity = PROFILE[player].SETTINGS[SENSITIVITY] / 40.0f * fmax(mouseaccel, 1);
 		const float gunsensitivity = sensitivity * (PROFILE[player].SETTINGS[CROSSHAIR] / 2.5f);
 		float camx = EMU_ReadFloat(playerbase[player] + PD_camx), camy = EMU_ReadFloat(playerbase[player] + PD_camy), bikex = EMU_ReadFloat(bikebase[player][0]), bikeroll = EMU_ReadFloat(bikebase[player][0] + PD_bikeroll);
-		if(camx >= 0 && camx <= 360 && camy >= -90 && camy <= 90 && fov >= 1 && fov <= 120 && dead == 0 && menu == 1 && pause == 0 && mppause < 16777476 && camera == 1 && (grabflag == 0 || grabflag == 4 || grabflag == 3 && bikebase[player][0] && bikex <= BIKEXROTATIONLIMIT && bikex >= 0 && bikeroll <= BIKEROLLLIMIT && bikeroll >= -BIKEROLLLIMIT)) // if safe to inject
+		if(camx >= 0 && camx <= 360 && camy >= -90 && camy <= 90 && fov >= 1 && fov <= 120 && dead == 0 && menu == 1 && pause == 0 && mppause == 0 && camera == 1 && (grabflag == 0 || grabflag == 4 || grabflag == 3 && bikebase[player][0] && bikex <= BIKEXROTATIONLIMIT && bikex >= 0 && bikeroll <= BIKEROLLLIMIT && bikeroll >= -BIKEROLLLIMIT)) // if safe to inject
 		{
 			if(thirdperson == 1 || thirdperson == 2) // if player is using the slayer/camspy, translate mouse input to analog stick and continue to next player
 			{

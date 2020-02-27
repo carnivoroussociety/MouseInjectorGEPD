@@ -47,6 +47,7 @@
 #define PD_difficulty 0x80084020
 #define PD_camera 0x8009A26C
 #define PD_pause 0x80084014
+#define PD_mppause 0x800ACBA6
 #define PD_joannadata 0x8009A024
 #define PD_sptime 0x801BD21C - 0x801BB6A0
 #define PD_mptime 0x80084024
@@ -128,7 +129,7 @@ void DRP_Update(void)
 						if(pdmpstageids[index] == EMU_ReadInt(PD_stageid))
 							mpflag = 1;
 					presence.state = !mpflag ? pddifficulty[ClampInt(EMU_ReadInt(PD_difficulty), 0, 2)] : "Combat Simulator"; // set difficulty/combat simulator to state
-					if(EMU_ReadInt(PD_pause) == 0 && (EMU_ReadInt(PD_camera) == 1 || EMU_ReadInt(PD_camera) == 7)) // if in gameplay mode (not cutscene) and not paused, calculate time
+					if(EMU_ReadInt(PD_pause) == 0 && (EMU_ReadShort(PD_mppause) & 0xFF00) == 0 && (EMU_ReadInt(PD_camera) == 1 || EMU_ReadInt(PD_camera) == 7)) // if in gameplay mode (not cutscene) and not paused, calculate time
 					{
 						time_t currenttime = time(NULL); // get current time from OS
 						int gametime;

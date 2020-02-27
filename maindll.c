@@ -185,7 +185,7 @@ static void StopInjection(void)
 }
 //==========================================================================
 // Purpose: manage config window
-// Changed Globals: lastinputbutton, PROFILE.SETTINGS, currentplayer, overridefov, changeratio, geshowcrosshair, mouselockonfocus, mouseunlockonloss
+// Changed Globals: PROFILE.SETTINGS, currentplayer, lastinputbutton, overridefov, changeratio, geshowcrosshair, mouselockonfocus, mouseunlockonloss
 //==========================================================================
 static BOOL CALLBACK GUI_Config(HWND hW, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -194,7 +194,6 @@ static BOOL CALLBACK GUI_Config(HWND hW, UINT uMsg, WPARAM wParam, LPARAM lParam
 		case WM_INITDIALOG:
 			GUI_Init(hW); // set defaults/add items
 			GUI_Refresh(hW, 0); // refresh the interface
-			lastinputbutton = 0; // reset lastinputbutton
 			return TRUE;
 		case WM_COMMAND:
 		{
@@ -237,8 +236,8 @@ static BOOL CALLBACK GUI_Config(HWND hW, UINT uMsg, WPARAM wParam, LPARAM lParam
 				case IDC_PLAYER2:
 				case IDC_PLAYER3:
 				case IDC_PLAYER4:
-					lastinputbutton = 0;
 					currentplayer = LOWORD(wParam) - IDC_PLAYER1; // update currentplayer to new selected player
+					lastinputbutton = 0;
 					GUI_Refresh(hW, 0);
 					break;
 				case IDC_DETECTDEVICE:

@@ -17,8 +17,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, visit http://www.gnu.org/licenses/gpl-2.0.html
 //==========================================================================
-#define __MOUSE_INECTOR_VERSION__ "V1.9"
-#define __CURRENTYEAR__ "2019"
+#define __MOUSE_INECTOR_VERSION__ "V2.0"
+#define __CURRENTYEAR__ "2020"
 #define CONSOLE { AllocConsole(); AttachConsole(GetCurrentProcessId()); freopen("CON", "w", stdout); }
 #define ONLY1PLAYERACTIVE \
 PROFILE[PLAYER1].SETTINGS[CONFIG] != DISABLED && PROFILE[PLAYER2].SETTINGS[CONFIG] == DISABLED && PROFILE[PLAYER3].SETTINGS[CONFIG] == DISABLED && PROFILE[PLAYER4].SETTINGS[CONFIG] == DISABLED || \
@@ -28,7 +28,7 @@ PROFILE[PLAYER1].SETTINGS[CONFIG] == DISABLED && PROFILE[PLAYER2].SETTINGS[CONFI
 #if _MSC_VER && !__INTEL_COMPILER // here because some MSVC versions only support __inline :/
 #define inline __inline
 #endif
-#ifdef SPEEDRUN_BUILD
+#ifdef SPEEDRUN_BUILD // gives unfair advantage, use smaller fov range for speedrun build
 #define FOV_MIN 60
 #define FOV_MAX 75
 #else
