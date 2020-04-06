@@ -68,6 +68,8 @@
 #define PD_introcounter 0x800624C4 // counter for intro
 #define PD_pickupyaxisthreshold 0x803CAE78 // y axis threshold on picking up weapons
 #define PD_weapontable 0x8006FF1C // weapon pointer table, used to change view model positions
+#define PD_radialmenutimer 0x802EA2BC // time instruction for radial menu to appear (15 ticks)
+#define PD_radialmenualphainit 0x803D2CDC // initial alpha value for all menus
 
 static unsigned int playerbase[4] = {0, 0, 0, 0}; // current player's joannadata address
 static unsigned int bikebase[4][2] = {{0, 0}, {0, 0}, {0, 0}, {0, 0}}; // hoverbike's address and player's last grab state (used to find the exact moment when the player hops on a bike)
@@ -455,6 +457,10 @@ static void PD_InjectHacks(void)
 #ifndef SPEEDRUN_BUILD // gives unfair advantage, remove for speedrun build
 	if((unsigned int)EMU_ReadInt(PD_pickupyaxisthreshold) == 0xBF4907A9) // if safe to overwrite
 		EMU_WriteFloat(PD_pickupyaxisthreshold, -60.f * PI / 180.f); // overwrite default y axis limit for picking up items (from -45 to -60)
+	if((unsigned int)EMU_ReadInt(PD_radialmenutimer) == 0x28410010 && emuoverclock) // make radial menu trigger quicker (from 15 to 7 ticks)
+		EMU_WriteInt(PD_radialmenutimer, 0x28410008);
+	if((unsigned int)EMU_ReadInt(PD_radialmenualphainit) == 0x3E99999A) // make radial menus initalize with 75% alpha
+		EMU_WriteFloat(PD_radialmenualphainit, 0.75f);
 #endif
 	if(overridefov != 60) // override default fov
 	{
@@ -474,7 +480,6 @@ static void PD_InjectHacks(void)
 				EMU_WriteFloat(weaponptr + 0x34, weaponzpos);
 			}
 		}
-
 	}
 	if(CONTROLLER[PLAYER1].Z_TRIG && CONTROLLER[PLAYER1].R_TRIG) // skip intros if holding down fire + aim
 		EMU_WriteInt(PD_introcounter, 0x00001000);
