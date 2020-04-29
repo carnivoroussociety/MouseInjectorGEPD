@@ -65,6 +65,8 @@
 #define PD_mppause 0x800ACBA6 // used to check if multiplayer match is paused
 #define PD_defaultfov 0x802EAA5C // field of view default
 #define PD_defaultfovzoom 0x802EACFC // field of view default for zoom
+#define PD_defaultzoominspeed 0x802DA8F8 // default zoom in speed
+#define PD_defaultzoomoutspeed 0x802DA924 // default zoom out speed
 #define PD_introcounter 0x800624C4 // counter for intro
 #define PD_pickupyaxisthreshold 0x803CAE78 // y axis threshold on picking up weapons
 #define PD_weapontable 0x8006FF1C // weapon pointer table, used to change view model positions
@@ -480,6 +482,17 @@ static void PD_InjectHacks(void)
 				EMU_WriteFloat(weaponptr + 0x34, weaponzpos);
 			}
 		}
+#ifndef SPEEDRUN_BUILD // gives unfair advantage, remove for speedrun build
+		if(overridefov > 60)
+		{
+			newfov = 15.f / (overridefov / 60.f);
+			unsignedinteger = *(unsigned int *)(float *)(&newfov);
+			EMU_WriteInt(PD_defaultzoominspeed, 0x3C010000 + (short)(unsignedinteger / 0x10000)); // adjust zoom in speed default (15.f)
+			newfov = 30.f * (overridefov / 60.f);
+			unsignedinteger = *(unsigned int *)(float *)(&newfov);
+			EMU_WriteInt(PD_defaultzoomoutspeed, 0x3C010000 + (short)(unsignedinteger / 0x10000)); // adjust zoom out speed default (30.f)
+		}
+#endif
 	}
 	if(CONTROLLER[PLAYER1].Z_TRIG && CONTROLLER[PLAYER1].R_TRIG) // skip intros if holding down fire + aim
 		EMU_WriteInt(PD_introcounter, 0x00001000);
