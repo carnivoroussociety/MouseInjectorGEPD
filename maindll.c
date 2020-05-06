@@ -366,7 +366,7 @@ static void GUI_Init(const HWND hW)
 	SendMessage(GetDlgItem(hW, IDC_FOV), TBM_SETRANGEMIN, 0, FOV_MIN);
 	SendMessage(GetDlgItem(hW, IDC_FOV), TBM_SETRANGEMAX, 0, FOV_MAX);
 #ifdef SPEEDRUN_BUILD // replace info box with details about the speedrun build
-	SetDlgItemText(hW, IDC_INFO, "The speedrun build removes the FOV zoom speed adjustment for GE. This is to ensure all players will have the same watch/weapon zoom speed regardless of their FOV setting.\n\nIt also removes Y axis pickup threshold adjustment for GE/PD so it's the original value (-45 degrees).");
+	SetDlgItemText(hW, IDC_INFO, "The speedrun build removes the FOV zoom speed adjustment. This is to ensure all players will have the same watch/weapon zoom speed regardless of their FOV setting.\n\nIt also removes Y axis pickup threshold adjustment so it's the original value (-45 degrees).");
 #endif
 }
 //==========================================================================
