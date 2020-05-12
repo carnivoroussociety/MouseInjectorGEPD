@@ -98,10 +98,6 @@ DWORD WINAPI DEV_InjectThread()
 	int togglebuffer = 0; // buffer cool down for mouse toggle
 	int acceptalldevices = 0; // accept all device input (used if only 1 player is active)
 	unsigned char lockmousecounter = 0; // limit SetCursorPos execution
-	while(ManyMouse_PollEvent(&event)); // flush input before starting
-	{
-		Sleep(1);
-	}
 	while(!stopthread)
 	{
 		if(mousetoggle && lockmousecounter % (emuoverclock ? 5 : 2) == 0) // don't execute every tick

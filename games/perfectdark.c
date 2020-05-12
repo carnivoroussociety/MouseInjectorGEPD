@@ -63,6 +63,7 @@
 #define PD_pause 0x80084014 // menu flag (1 = PD is paused)
 #define PD_menuitem 0x800739F8 // menu item flag (used to check if PD is running)
 #define PD_mppause 0x800ACBA6 // used to check if multiplayer match is paused
+#define PD_defaultratio 0x803CD680 // 16:9 ratio default
 #define PD_defaultfov 0x802EAA5C // field of view default
 #define PD_defaultfovzoom 0x802EACFC // field of view default for zoom
 #define PD_defaultzoominspeed 0x802DA8F8 // default zoom in speed
@@ -182,12 +183,12 @@ static void PD_Inject(void)
 		const int thirdperson = EMU_ReadInt(playerbase[player] + PD_thirdperson);
 		const int cursoraimingflag = PROFILE[player].SETTINGS[PDAIMMODE] && aimingflag;
 		const float fov = EMU_ReadFloat(playerbase[player] + PD_fov);
-		const float basefov = fov > 60.0f ? (float)overridefov : 60.0f;
+		const float basefov = fov > 60.0f ? (float)OVERRIDEFOV : 60.0f;
 		const float mouseaccel = PROFILE[player].SETTINGS[ACCELERATION] ? sqrt(DEVICE[player].XPOS * DEVICE[player].XPOS + DEVICE[player].YPOS * DEVICE[player].YPOS) / TICKRATE / 12.0f * PROFILE[player].SETTINGS[ACCELERATION] : 0;
 		const float sensitivity = PROFILE[player].SETTINGS[SENSITIVITY] / 40.0f * fmax(mouseaccel, 1);
 		const float gunsensitivity = sensitivity * (PROFILE[player].SETTINGS[CROSSHAIR] / 2.5f);
 		float camx = EMU_ReadFloat(playerbase[player] + PD_camx), camy = EMU_ReadFloat(playerbase[player] + PD_camy), bikex = EMU_ReadFloat(bikebase[player][0]), bikeroll = EMU_ReadFloat(bikebase[player][0] + PD_bikeroll);
-		if(camx >= 0 && camx <= 360 && camy >= -90 && camy <= 90 && fov >= 1 && fov <= 120 && dead == 0 && menu == 1 && pause == 0 && mppause == 0 && camera == 1 && (grabflag == 0 || grabflag == 4 || grabflag == 3 && bikebase[player][0] && bikex <= BIKEXROTATIONLIMIT && bikex >= 0 && bikeroll <= BIKEROLLLIMIT && bikeroll >= -BIKEROLLLIMIT)) // if safe to inject
+		if(camx >= 0 && camx <= 360 && camy >= -90 && camy <= 90 && fov >= 1 && fov <= FOV_MAX && dead == 0 && menu == 1 && pause == 0 && mppause == 0 && camera == 1 && (grabflag == 0 || grabflag == 4 || grabflag == 3 && bikebase[player][0] && bikex <= BIKEXROTATIONLIMIT && bikex >= 0 && bikeroll <= BIKEROLLLIMIT && bikeroll >= -BIKEROLLLIMIT)) // if safe to inject
 		{
 			if(thirdperson == 1 || thirdperson == 2) // if player is using the slayer/camspy, translate mouse input to analog stick and continue to next player
 			{
@@ -238,8 +239,8 @@ static void PD_Inject(void)
 			if(PROFILE[player].SETTINGS[CROSSHAIR] && !cursoraimingflag) // if crosshair movement is enabled and player isn't aiming (don't calculate weapon movement while the player is in aim mode)
 			{
 				float gunx = EMU_ReadFloat(playerbase[player] + PD_gunrx), crosshairx = EMU_ReadFloat(playerbase[player] + PD_crosshairx); // after camera x and y have been calculated and injected, calculate the gun/reload/crosshair movement
-				gunx += DEVICE[player].XPOS / (!aimingflag ? 10.0f : 40.0f) * gunsensitivity * (fov / basefov) * 0.05f;
-				crosshairx += DEVICE[player].XPOS / (!aimingflag ? 10.0f : 40.0f) * gunsensitivity * (fov / 4 / (basefov / 4)) * 0.05f;
+				gunx += DEVICE[player].XPOS / (!aimingflag ? 10.0f : 40.0f) * gunsensitivity * (fov / basefov) * 0.05f / RATIOFACTOR;
+				crosshairx += DEVICE[player].XPOS / (!aimingflag ? 10.0f : 40.0f) * gunsensitivity * (fov / 4 / (basefov / 4)) * 0.05f / RATIOFACTOR;
 				if(aimingflag) // emulate cursor moving back to the center
 					gunx /= emuoverclock ? 1.03f : 1.07f, crosshairx /= emuoverclock ? 1.03f : 1.07f;
 				gunx = ClampFloat(gunx, -GUNAIMLIMIT, GUNAIMLIMIT);
@@ -310,7 +311,7 @@ static void PD_AimMode(const int player, const int aimingflag, const float fov, 
 	if(aimingflag) // if player is aiming
 	{
 		const float mouseaccel = PROFILE[player].SETTINGS[ACCELERATION] ? sqrt(DEVICE[player].XPOS * DEVICE[player].XPOS + DEVICE[player].YPOS * DEVICE[player].YPOS) / TICKRATE / 12.0f * PROFILE[player].SETTINGS[ACCELERATION] : 0;
-		crosshairposx[player] += DEVICE[player].XPOS / 10.0f * (PROFILE[player].SETTINGS[SENSITIVITY] / sensitivity) * fmax(mouseaccel, 1); // calculate the crosshair position
+		crosshairposx[player] += DEVICE[player].XPOS / 10.0f * (PROFILE[player].SETTINGS[SENSITIVITY] / sensitivity / RATIOFACTOR) * fmax(mouseaccel, 1); // calculate the crosshair position
 		crosshairposy[player] += (!PROFILE[player].SETTINGS[INVERTPITCH] ? DEVICE[player].YPOS : -DEVICE[player].YPOS) / 10.0f * (PROFILE[player].SETTINGS[SENSITIVITY] / sensitivity) * fmax(mouseaccel, 1);
 		crosshairposx[player] = ClampFloat(crosshairposx[player], -CROSSHAIRLIMIT, CROSSHAIRLIMIT); // apply clamp then inject
 		crosshairposy[player] = ClampFloat(crosshairposy[player], -CROSSHAIRLIMIT, CROSSHAIRLIMIT);
@@ -329,11 +330,11 @@ static void PD_AimMode(const int player, const int aimingflag, const float fov, 
 		if(gunlcenter[player] < 0)
 			gunlcenter[player] = 0;
 		EMU_WriteFloat(playerbase[player] + PD_gunrx, (gunrcenter[player] / centertime) * (crosshairposx[player] * 0.75f) + fovratio - 1); // calculate and inject the gun angles
-		EMU_WriteFloat(playerbase[player] + PD_gunrxrecoil, crosshairposx[player] * (GUNRECOILXLIMIT / CROSSHAIRLIMIT) * fovmodifier); // set the recoil to the correct rotation (if we don't, then the recoil is always z axis aligned)
+		EMU_WriteFloat(playerbase[player] + PD_gunrxrecoil, crosshairposx[player] * (GUNRECOILXLIMIT / CROSSHAIRLIMIT) * fovmodifier * RATIOFACTOR); // set the recoil to the correct rotation (if we don't, then the recoil is always z axis aligned)
 		EMU_WriteFloat(playerbase[player] + PD_gunry, (gunrcenter[player] / centertime) * (crosshairposy[player] * 0.66f) + fovratio - 1);
 		EMU_WriteFloat(playerbase[player] + PD_gunryrecoil, crosshairposy[player] * (GUNRECOILYLIMIT / CROSSHAIRLIMIT) * fovmodifier);
 		EMU_WriteFloat(playerbase[player] + PD_gunlx, (gunlcenter[player] / centertime) * (crosshairposx[player] * 0.75f) + fovratio - 1);
-		EMU_WriteFloat(playerbase[player] + PD_gunlxrecoil, crosshairposx[player] * (GUNRECOILXLIMIT / CROSSHAIRLIMIT) * fovmodifier);
+		EMU_WriteFloat(playerbase[player] + PD_gunlxrecoil, crosshairposx[player] * (GUNRECOILXLIMIT / CROSSHAIRLIMIT) * fovmodifier * RATIOFACTOR);
 		EMU_WriteFloat(playerbase[player] + PD_gunly, (gunlcenter[player] / centertime) * (crosshairposy[player] * 0.66f) + fovratio - 1);
 		EMU_WriteFloat(playerbase[player] + PD_gunlyrecoil, crosshairposy[player] * (GUNRECOILYLIMIT / CROSSHAIRLIMIT) * fovmodifier);
 		if(crosshairx > 0 && crosshairx / CROSSHAIRLIMIT > threshold) // if crosshair is within threshold of the border then calculate a linear scrolling speed and enable mouselook
@@ -463,10 +464,9 @@ static void PD_InjectHacks(void)
 		EMU_WriteInt(PD_radialmenutimer, 0x28410008);
 	if((unsigned int)EMU_ReadInt(PD_radialmenualphainit) == 0x3E99999A) // make radial menus initalize with 75% alpha
 		EMU_WriteFloat(PD_radialmenualphainit, 0.75f);
-#endif
-	if(overridefov != 60) // override default fov
+	if(OVERRIDEFOV != 60) // override default fov
 	{
-		float newfov = overridefov;
+		float newfov = OVERRIDEFOV;
 		unsigned int unsignedinteger = *(unsigned int *)(float *)(&newfov);
 		EMU_WriteInt(PD_defaultfov, 0x3C010000 + (short)(unsignedinteger / 0x10000));
 		EMU_WriteInt(PD_defaultfovzoom, 0x3C010000 + (short)(unsignedinteger / 0x10000));
@@ -475,25 +475,26 @@ static void PD_InjectHacks(void)
 			for(int index = 0; index < 64; index++) // cycle through first 64 weapons
 			{
 				const unsigned int weaponptr = EMU_ReadInt(PD_weapontable + (index * 4)); // get pointer for weapon slot
-				const float fovoffset = overridefov - 60;
+				const float fovoffset = OVERRIDEFOV - 60;
 				const float weaponypos = EMU_ReadFloat(weaponptr + 0x30) - (fovoffset / (2.75f * 4.f)); // adjust weapon Y/Z positions for override field of view
 				const float weaponzpos = EMU_ReadFloat(weaponptr + 0x34) + (fovoffset / 3.f);
 				EMU_WriteFloat(weaponptr + 0x30, weaponypos);
 				EMU_WriteFloat(weaponptr + 0x34, weaponzpos);
 			}
 		}
-#ifndef SPEEDRUN_BUILD // gives unfair advantage, remove for speedrun build
-		if(overridefov > 60)
+		if(OVERRIDEFOV > 60)
 		{
-			newfov = 15.f / (overridefov / 60.f);
+			newfov = 15.f / (OVERRIDEFOV / 60.f);
 			unsignedinteger = *(unsigned int *)(float *)(&newfov);
 			EMU_WriteInt(PD_defaultzoominspeed, 0x3C010000 + (short)(unsignedinteger / 0x10000)); // adjust zoom in speed default (15.f)
-			newfov = 30.f * (overridefov / 60.f);
+			newfov = 30.f * (OVERRIDEFOV / 60.f);
 			unsignedinteger = *(unsigned int *)(float *)(&newfov);
 			EMU_WriteInt(PD_defaultzoomoutspeed, 0x3C010000 + (short)(unsignedinteger / 0x10000)); // adjust zoom out speed default (30.f)
 		}
-#endif
 	}
+	if((unsigned int)EMU_ReadInt(PD_defaultratio) == 0x3FAAAAAB && overrideratiowidth != 16 && overrideratioheight != 9) // override default 16:9 ratio
+		EMU_WriteFloat(PD_defaultratio, ((float)overrideratiowidth / (float)overrideratioheight) / (4.f / 3.f));
+#endif
 	if(CONTROLLER[PLAYER1].Z_TRIG && CONTROLLER[PLAYER1].R_TRIG) // skip intros if holding down fire + aim
 		EMU_WriteInt(PD_introcounter, 0x00001000);
 }

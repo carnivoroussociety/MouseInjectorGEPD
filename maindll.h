@@ -19,6 +19,13 @@
 //==========================================================================
 #define TICKRATE (emuoverclock ? 2 : 4)
 #define TIMESTEP TICKRATE / 1000
+#ifdef SPEEDRUN_BUILD // fov/ratio hacks gives unfair advantage, always use default values for speedrun build
+#define RATIOFACTOR 1.f
+#define OVERRIDEFOV 60
+#else
+#define RATIOFACTOR (((float)overrideratiowidth / (float)overrideratioheight) / (16.f / 9.f))
+#define OVERRIDEFOV overridefov
+#endif
 
 extern const unsigned char **rdramptr;
 extern const unsigned char **romptr;
@@ -30,4 +37,5 @@ extern int mouseunlockonloss;
 extern HWND emulatorwindow;
 extern int emuoverclock;
 extern int overridefov;
+extern int overrideratiowidth, overrideratioheight;
 extern int geshowcrosshair;

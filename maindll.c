@@ -34,14 +34,15 @@
 
 static HINSTANCE hInst = NULL;
 static HANDLE injectthread = 0; // thread identifier
-static wchar_t inifilepath[MAX_PATH]; // mouseinjector.ini filepath
-static const char inifilepathdefault[MAX_PATH] = ".\\plugin\\mouseinjector.ini"; // mouseinjector.ini filepath (safe default char type)
+static wchar_t inifilepath[MAX_PATH] = {L'\0'}; // mouseinjector.ini filepath
+static const char inifilepathdefault[] = ".\\plugin\\mouseinjector.ini"; // mouseinjector.ini filepath (safe default char type)
 static int lastinputbutton = 0; // used to check and see if user pressed button twice in a row (avoid loop for spacebar/enter/click)
 static int currentplayer = PLAYER1;
 static int defaultmouse = -1, defaultkeyboard = -1;
 static CONTROL *ctrlptr = NULL;
 static int currentlyconfiguring = 0;
 static int changeratio = 0; // used to display different hoz fov for 4:3/16:9 ratio
+static int guibusy = 1; // flag to bypass gui message pump
 
 const unsigned char **rdramptr = 0; // pointer to emulator's rdram table
 const unsigned char **romptr = 0; // pointer to emulator's loaded rom
@@ -53,6 +54,7 @@ int mouseunlockonloss = 1; // unlock mouse when 1964 is unfocused
 HWND emulatorwindow = NULL;
 int emuoverclock = 1; // is this emu overclocked?
 int overridefov = 60; // fov override
+int overrideratiowidth = 16, overrideratioheight = 9; // ratio override
 int geshowcrosshair = 0; // inject the always show ge crosshair hack on start
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved);
@@ -197,6 +199,8 @@ static BOOL CALLBACK GUI_Config(HWND hW, UINT uMsg, WPARAM wParam, LPARAM lParam
 			return TRUE;
 		case WM_COMMAND:
 		{
+			if(guibusy) // don't process until gui is free
+				break;
 			switch(LOWORD(wParam))
 			{
 				case IDC_CONFIGBOX:
@@ -302,6 +306,18 @@ static BOOL CALLBACK GUI_Config(HWND hW, UINT uMsg, WPARAM wParam, LPARAM lParam
 				case IDC_GESHOWCROSSHAIR:
 					geshowcrosshair = SendMessage(GetDlgItem(hW, LOWORD(wParam)), BM_GETCHECK, 0, 0);
 					break;
+				case IDC_RATIOHEIGHT:
+				case IDC_RATIOWIDTH:
+					if(stopthread) // do this if game isn't running
+					{
+						char inputratio[4];
+						GetDlgItemText(hW, IDC_RATIOWIDTH, inputratio, 3); // get ratio strings
+						overrideratiowidth = ClampInt(atoi(inputratio), 1, 99);
+						GetDlgItemText(hW, IDC_RATIOHEIGHT, inputratio, 3);
+						overrideratioheight = ClampInt(atoi(inputratio), 1, 99);
+						GUI_Refresh(hW, 2); // refresh and ignore revert button's state (ratio override is a global option for all players, ignore revert button because player's profile didn't change)
+					}
+					break;
 				case IDC_LOCK:
 					GUI_ProcessKey(hW, LOWORD(wParam), 2);
 					break;
@@ -318,6 +334,8 @@ static BOOL CALLBACK GUI_Config(HWND hW, UINT uMsg, WPARAM wParam, LPARAM lParam
 		}
 		case WM_HSCROLL:
 		{
+			if(guibusy) // don't process until gui is free
+				break;
 			if(overridefov != SendMessage(GetDlgItem(hW, IDC_FOV), TBM_GETPOS, 0, 0)) // if fov slider moved
 			{
 				overridefov = SendMessage(GetDlgItem(hW, IDC_FOV), TBM_GETPOS, 0, 0);
@@ -365,15 +383,26 @@ static void GUI_Init(const HWND hW)
 	SendMessage(GetDlgItem(hW, IDC_SLIDER02), TBM_SETRANGEMAX, 0, 18);
 	SendMessage(GetDlgItem(hW, IDC_FOV), TBM_SETRANGEMIN, 0, FOV_MIN);
 	SendMessage(GetDlgItem(hW, IDC_FOV), TBM_SETRANGEMAX, 0, FOV_MAX);
-#ifdef SPEEDRUN_BUILD // replace info box with details about the speedrun build
+	SendMessage(GetDlgItem(hW, IDC_RATIOWIDTH), EM_SETLIMITTEXT, 2, 0);
+	SendMessage(GetDlgItem(hW, IDC_RATIOHEIGHT), EM_SETLIMITTEXT, 2, 0);
+	char overrideratio[4];
+	sprintf(overrideratio, "%d", overrideratiowidth); // set ratio override
+	SetDlgItemText(hW, IDC_RATIOWIDTH, overrideratio);
+	sprintf(overrideratio, "%d", overrideratioheight);
+	SetDlgItemText(hW, IDC_RATIOHEIGHT, overrideratio);
+#ifdef SPEEDRUN_BUILD // hide fov/ratio elements for speedrun build and replace info box with details about the speedrun build
+	for(int index = IDC_RATIOSTATIC; index <= IDC_FOV_NOTE; index++)
+		ShowWindow(GetDlgItem(hW, index), 0);
 	SetDlgItemText(hW, IDC_INFO, "The speedrun build removes the FOV zoom speed adjustment. This is to ensure all players will have the same watch/weapon zoom speed regardless of their FOV setting.\n\nIt also removes Y axis pickup threshold adjustment so it's the original value (-45 degrees).");
 #endif
 }
 //==========================================================================
 // Purpose: refresh the interface and display current player's settings
+// Changed Globals: guibusy
 //==========================================================================
 static void GUI_Refresh(const HWND hW, const int revertbtn)
 {
+	guibusy = 1; // disable gui from processing messages, so we can safely update ui elements without processing useless messages
 	// set radio buttons
 	for(int radiobtn = PLAYER1; radiobtn < ALLPLAYERS; radiobtn++) // uncheck other player's radio buttons
 		if(currentplayer != radiobtn)
@@ -446,7 +475,7 @@ static void GUI_Refresh(const HWND hW, const int revertbtn)
 	// calculate and set fov (ge/pd format is vertical fov, convert to hor fov)
 	const double fovtorad = (double)overridefov * (3.1415 / 180.f);
 	const double setfov = 2.f * atan((tan(fovtorad / 2.f) / (0.75))) * (180.f / 3.1415);
-	const double aspect = changeratio ? 4.f / 3.f : 16.f / 9.f;
+	const double aspect = changeratio ? 4.f / 3.f : (float)overrideratiowidth / (float)overrideratioheight;
 	const double hfov = 2.f * atan((tan(setfov / 2.f * (3.1415 / 180.f))) * (aspect * 0.75)) * (180.f / 3.1415);
 	sprintf(label, "Vertical FOV:  %d (Hor %d)", overridefov, (int)hfov); // set degrees for fov
 	SetDlgItemText(hW, IDC_FOV_DEGREES, label);
@@ -456,10 +485,12 @@ static void GUI_Refresh(const HWND hW, const int revertbtn)
 	// disable/enable sensitivity and checkboxes according to player status
 	for(int trackbar = IDC_SLIDER00; trackbar <= IDC_PDCURSORAIMING; trackbar++) // set trackbar and checkbox statuses
 		EnableWindow(GetDlgItem(hW, trackbar), PROFILE[currentplayer].SETTINGS[CONFIG] != DISABLED);
-	// enable/disable fov adjustment when game is running
+	// enable/disable all player options when game is running
 	EnableWindow(GetDlgItem(hW, IDC_RESETFOV), stopthread && overridefov != 60); // disable/enable fov reset button depending if fov is default or not and if game isn't running
-	for(int fovbuttons = IDC_FOV_DEGREES; fovbuttons <= IDC_GESHOWCROSSHAIR; fovbuttons++)
-		EnableWindow(GetDlgItem(hW, fovbuttons), stopthread); // if stopthread is 0 it means game is running
+	for(int index = IDC_RATIOSTATIC; index <= IDC_RATIOHEIGHT; index++)
+		EnableWindow(GetDlgItem(hW, index), stopthread); // if stopthread is 0 it means game is running
+	for(int index = IDC_FOV_DEGREES; index <= IDC_GESHOWCROSSHAIR; index++)
+		EnableWindow(GetDlgItem(hW, index), stopthread);
 	SendMessage(GetDlgItem(hW, IDC_GESHOWCROSSHAIR), BM_SETCHECK, geshowcrosshair ? BST_CHECKED : BST_UNCHECKED, 0); // set checkbox for show crosshair
 	// revert button
 	if(revertbtn != 2) // 2 is ignore flag
@@ -475,6 +506,7 @@ static void GUI_Refresh(const HWND hW, const int revertbtn)
 	SetDlgItemText(hW, IDC_LOCK, GetKeyName(mousetogglekey)); // set mouse toggle text
 	SendMessage(GetDlgItem(hW, IDC_LOCKONFOCUS), BM_SETCHECK, mouselockonfocus ? BST_CHECKED : BST_UNCHECKED, 0); // set mouse lock checkbox
 	SendMessage(GetDlgItem(hW, IDC_UNLOCKONWINLOSS), BM_SETCHECK, mouseunlockonloss ? BST_CHECKED : BST_UNCHECKED, 0); // set mouse unlock checkbox
+	guibusy = 0; // finished refreshing gui, safe to process messages now
 }
 //==========================================================================
 // Purpose: process input binding
@@ -605,14 +637,14 @@ static void GUI_DetectDevice(const HWND hW, const int buttonid)
 }
 //==========================================================================
 // Purpose: load profile settings (i'm really sorry about this mess)
-// Changed Globals: PROFILE, overridefov, geshowcrosshair, mouselockonfocus, mouseunlockonloss, mousetogglekey
+// Changed Globals: PROFILE, overridefov, overrideratiowidth, overrideratioheight, geshowcrosshair, mouselockonfocus, mouseunlockonloss, mousetogglekey
 //==========================================================================
 static void INI_Load(const HWND hW, const int loadplayer)
 {
 	#define PRIMBTNBLKSIZE 4 * 16 // 4 PLAYERS * BUTTONPRIM
 	#define BUTTONBLKSIZE 4 * (16 + 16) // 4 PLAYERS * (BUTTONPRIM + BUTTONSEC)
 	#define SETTINGBLKSIZE 4 * 10 // 4 PLAYERS * SETTINGS
-	#define TOTALLINES BUTTONBLKSIZE + SETTINGBLKSIZE + 5 // profile struct[all players] + overridefov + geshowcrosshair + mouselockonfocus + mouseunlockonloss + mousetogglekey
+	#define TOTALLINES BUTTONBLKSIZE + SETTINGBLKSIZE + 7 // profile struct[all players] + overridefov + overrideratiowidth + overrideratioheight + geshowcrosshair + mouselockonfocus + mouseunlockonloss + mousetogglekey
 	FILE *fileptr; // file pointer for mouseinjector.ini
 	if((fileptr = fopen(inifilepathdefault, "r")) == NULL) // if INI file was not found
 		fileptr = _wfopen(inifilepath, L"r"); // reattempt to load INI file using wide character filepath
@@ -648,7 +680,9 @@ static void INI_Load(const HWND hW, const int loadplayer)
 			{
 				if(loadplayer == ALLPLAYERS) // only load if given ALLPLAYERS flag
 				{
-					overridefov = ClampInt(atoi(line[TOTALLINES - 5]), FOV_MIN, FOV_MAX); // load overridefov
+					overridefov = ClampInt(atoi(line[TOTALLINES - 7]), FOV_MIN, FOV_MAX); // load overridefov
+					overrideratiowidth = ClampInt(atoi(line[TOTALLINES - 6]), 1, 99); // load overrideratiowidth
+					overrideratioheight = ClampInt(atoi(line[TOTALLINES - 5]), 1, 99); // load overrideratioheight
 					geshowcrosshair = !(!atoi(line[TOTALLINES - 4])); // load geshowcrosshair
 					mouselockonfocus = !(!atoi(line[TOTALLINES - 3])); // load mouselockonfocus
 					mouseunlockonloss = !(!atoi(line[TOTALLINES - 2])); // load mouseunlockonloss
@@ -710,7 +744,7 @@ static void INI_Save(const HWND hW)
 		for(int player = PLAYER1; player < ALLPLAYERS; player++)
 			for(int index = 0; index < 10; index++)
 				fprintf(fileptr, "%d\n", ClampInt(PROFILE[player].SETTINGS[index], 0, 100));
-		fprintf(fileptr, "%d\n%d\n%d\n%d\n%d", overridefov, geshowcrosshair, mouselockonfocus, mouseunlockonloss, mousetogglekey);
+		fprintf(fileptr, "%d\n%d\n%d\n%d\n%d\n%d\n%d", overridefov, overrideratiowidth, overrideratioheight, geshowcrosshair, mouselockonfocus, mouseunlockonloss, mousetogglekey);
 		fclose(fileptr); // close the file stream
 	}
 	else // if saving file failed (could be set to read only, antivirus is preventing file writing or filepath is invalid)
@@ -718,7 +752,7 @@ static void INI_Save(const HWND hW)
 }
 //==========================================================================
 // Purpose: reset a player struct or all players
-// Changed Globals: PROFILE, overridefov, geshowcrosshair, mouselockonfocus, mouseunlockonloss, mousetogglekey, lastinputbutton
+// Changed Globals: PROFILE, overridefov, overrideratiowidth, overrideratioheight, geshowcrosshair, mouselockonfocus, mouseunlockonloss, mousetogglekey, lastinputbutton
 //==========================================================================
 static void INI_Reset(const int playerflag)
 {
@@ -735,7 +769,7 @@ static void INI_Reset(const int playerflag)
 			for(int index = 0; index < 10; index++)
 				PROFILE[player].SETTINGS[index] = defaultsetting[index];
 		}
-		overridefov = 60, geshowcrosshair = 0, mouselockonfocus = 0, mouseunlockonloss = 1, mousetogglekey = 0x34;
+		overridefov = 60, overrideratiowidth = 16, overrideratioheight = 9, geshowcrosshair = 0, mouselockonfocus = 0, mouseunlockonloss = 1, mousetogglekey = 0x34;
 	}
 	else
 	{
@@ -809,17 +843,17 @@ DLLEXPORT void CALL DllAbout(HWND hParent)
 //==========================================================================
 // Purpose: Optional function that is provided to allow the user to configure the DLL
 // Input: A handle to the window that calls this function
-// Changed Globals: currentlyconfiguring, mousetoggle, lastinputbutton, windowactive
+// Changed Globals: currentlyconfiguring, mousetoggle, lastinputbutton, guibusy, windowactive
 //==========================================================================
 DLLEXPORT void CALL DllConfig(HWND hParent)
 {
 	if(Init(hParent))
 	{
 		int laststate = mousetoggle;
-		currentlyconfiguring = 1, mousetoggle = 0, lastinputbutton = 0;
+		currentlyconfiguring = 1, mousetoggle = 0, lastinputbutton = 0, guibusy = 1;
 		DialogBox(hInst, MAKEINTRESOURCE(IDC_CONFIGWINDOW), hParent, (DLGPROC)GUI_Config);
 		UpdateControllerStatus();
-		currentlyconfiguring = 0, mousetoggle = laststate, windowactive = 1;
+		currentlyconfiguring = 0, mousetoggle = laststate, windowactive = 1, guibusy = 1;
 	}
 	else
 		MessageBox(hParent, "Mouse Injector could not find Mouse and Keyboard\n\nPlease connect devices and restart Emulator..." , "Mouse Injector - Error", MB_ICONERROR | MB_OK);
