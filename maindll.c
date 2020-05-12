@@ -393,7 +393,7 @@ static void GUI_Init(const HWND hW)
 #ifdef SPEEDRUN_BUILD // hide fov/ratio elements for speedrun build and replace info box with details about the speedrun build
 	for(int index = IDC_RATIOSTATIC; index <= IDC_FOV_NOTE; index++)
 		ShowWindow(GetDlgItem(hW, index), 0);
-	SetDlgItemText(hW, IDC_INFO, "The speedrun build removes the FOV zoom speed adjustment. This is to ensure all players will have the same watch/weapon zoom speed regardless of their FOV setting.\n\nIt also removes Y axis pickup threshold adjustment so it's the original value (-45 degrees).");
+	SetDlgItemText(hW, IDC_INFO, "The speedrun build removes the FOV and ratio adjustments. This is to ensure all players will have the same view ratio/fov as the original game.\n\nIt also removes Y axis pickup threshold adjustment so it's the original value (-45 degrees).");
 #endif
 }
 //==========================================================================
