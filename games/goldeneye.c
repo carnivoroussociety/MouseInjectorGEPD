@@ -357,7 +357,7 @@ static void GE_InjectHacks(void)
 #endif
 	if(geshowcrosshair) // inject show crosshair hack
 	{
-		EMU_WriteROM(GE_showcrosshair, 0x00007025); // replace lw $t6, 0x1128 ($v0) (8C4E1128) with or $t6, $r0, $r0 (00007025)
+		EMU_WriteROM(GE_showcrosshair, 0x8C4E01C8); // replace lw $t6, 0x1128 ($v0) (8C4E1128) with lw $t6, 0x01C8 ($v0) (8C4E01C8)
 		if(EMU_ReadROM(GE_crosshairimage) == 0x000008BC && EMU_ReadROM(0x28) != 0x45522020) // if crosshair image found and rom isn't Goldfinger 64 (why? because GF64 replaced beta crosshair image with ammo icon)
 			EMU_WriteROM(GE_crosshairimage, 0x000008BD); // replace crosshair image with beta crosshair
 	}
