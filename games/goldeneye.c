@@ -352,7 +352,7 @@ static void GE_InjectHacks(void)
 		if(OVERRIDEFOV > 60)
 			EMU_WriteFloat(GE_defaultzoomspeed, (OVERRIDEFOV - 60) * ((1.7f - 0.909091f) / 60.0f) + 0.909091f); // adjust zoom speed default (0.909091 default, 1.7 max)
 	}
-	if((unsigned int)EMU_ReadInt(GE_defaultratio) == 0x3FE38E39 && overrideratiowidth != 16 && overrideratioheight != 9) // override default 16:9 ratio
+	if((unsigned int)EMU_ReadInt(GE_defaultratio) == 0x3FE38E39 && (overrideratiowidth != 16 || overrideratioheight != 9)) // override default 16:9 ratio
 		EMU_WriteFloat(GE_defaultratio, (float)overrideratiowidth / (float)overrideratioheight);
 #endif
 	if(geshowcrosshair) // inject show crosshair hack

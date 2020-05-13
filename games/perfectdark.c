@@ -492,7 +492,7 @@ static void PD_InjectHacks(void)
 			EMU_WriteInt(PD_defaultzoomoutspeed, 0x3C010000 + (short)(unsignedinteger / 0x10000)); // adjust zoom out speed default (30.f)
 		}
 	}
-	if((unsigned int)EMU_ReadInt(PD_defaultratio) == 0x3FAAAAAB && overrideratiowidth != 16 && overrideratioheight != 9) // override default 16:9 ratio
+	if((unsigned int)EMU_ReadInt(PD_defaultratio) == 0x3FAAAAAB && (overrideratiowidth != 16 || overrideratioheight != 9)) // override default 16:9 ratio
 		EMU_WriteFloat(PD_defaultratio, ((float)overrideratiowidth / (float)overrideratioheight) / (4.f / 3.f));
 #endif
 	if(CONTROLLER[PLAYER1].Z_TRIG && CONTROLLER[PLAYER1].R_TRIG) // skip intros if holding down fire + aim
