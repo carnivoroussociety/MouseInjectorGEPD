@@ -61,6 +61,8 @@
 #define GE_crosshairimage 0x0029DE8C // crosshair image (rom)
 #define GE_introcounter 0x8002A8CC // counter for intro
 #define GE_seenintroflag 0x8002A930 // seen intro flag
+#define GE_controlstyle 0x000D98FC // instruction to read the current controller style
+#define GE_reversepitch 0x000D9970 // function used to read the current controller style (rom)
 #define GE_pickupyaxisthreshold 0x800532E0 // y axis threshold on picking up weapons
 #define GE_weaponypos 0x8003249C // y axis position for view models
 #define GE_weaponzpos (GE_weaponypos + 4) // z axis position for view models
@@ -329,6 +331,10 @@ static void GE_InjectHacks(void)
 	for(int index = 0; index < 27; index++) // inject code array
 		EMU_WriteROM(addressarray[index], codearray[index]);
 #ifndef SPEEDRUN_BUILD // gives unfair advantage, remove for speedrun build
+	if((unsigned int)EMU_ReadROM(GE_controlstyle) == 0x8DC22A58) // if safe to overwrite
+		EMU_WriteROM(GE_controlstyle, 0x34020001); // always force game to use 1.2 control style
+	if((unsigned int)EMU_ReadROM(GE_reversepitch) == 0x8C420A84) // if safe to overwrite
+		EMU_WriteROM(GE_reversepitch, 0x34020001); // always force game to use upright pitch
 	if((unsigned int)EMU_ReadInt(GE_pickupyaxisthreshold) == 0xBF490FDB && EMU_ReadInt(GE_menupage) == 0) // if safe to overwrite
 		EMU_WriteFloat(GE_pickupyaxisthreshold, -60.f * PI / 180.f); // overwrite default y axis limit for picking up items (from -45 to -60)
 	if(OVERRIDEFOV != 60) // override default fov

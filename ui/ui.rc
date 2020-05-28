@@ -103,24 +103,24 @@ FONT 8, "MS Shell Dlg", 0, 0, 0
     RTEXT           "Crosshair Movement:", IDC_SLIDER_STATIC02, 329, 111, 100, 9, SS_RIGHT | SS_CENTERIMAGE, WS_EX_LEFT
     LTEXT           "100%", IDC_SLIDER_DISPLAY02, 433, 111, 30, 9, SS_LEFT | SS_CENTERIMAGE, WS_EX_LEFT
     CONTROL         "Crosshair Slider", IDC_SLIDER02, TRACKBAR_CLASS, WS_TABSTOP | TBS_AUTOTICKS, 267, 120, 189, 11, WS_EX_LEFT
-    AUTOCHECKBOX    "Reverse Mouse Pitch", IDC_INVERTPITCH, 271, 133, 86, 17, WS_TABSTOP, WS_EX_LEFT
-    AUTOCHECKBOX    "Cursor Aiming (GE)", IDC_GECURSORAIMING, 369, 133, 83, 17, WS_TABSTOP, WS_EX_RIGHT
-    AUTOCHECKBOX    "Crouch Toggle", IDC_CROUCHTOGGLE, 271, 148, 65, 17, WS_TABSTOP, WS_EX_LEFT
-    AUTOCHECKBOX    "Cursor Aiming (PD)", IDC_PDCURSORAIMING, 369, 148, 83, 17, WS_TABSTOP, WS_EX_RIGHT
-    GROUPBOX        "All Players", IDC_ALLPLAYERS, 271, 165, 181, 59, 0, WS_EX_RIGHT
-    LTEXT           "16 x 9 Ratio Override:", IDC_RATIOSTATIC, 279, 176, 76, 9, SS_LEFT, WS_EX_LEFT
-    EDITTEXT        IDC_RATIOWIDTH, 398, 175, 15, 12, ES_CENTER | ES_AUTOHSCROLL | ES_NUMBER, WS_EX_LEFT
-    CTEXT           "x", IDC_RATIOSTATICX, 417, 176, 8, 9, SS_LEFT | SS_CENTER, WS_EX_LEFT
-    EDITTEXT        IDC_RATIOHEIGHT, 428, 175, 15, 12, ES_CENTER | ES_AUTOHSCROLL | ES_NUMBER, WS_EX_LEFT
-    PUSHBUTTON      "Reset FOV", IDC_RESETFOV, 278, 188, 40, 9, WS_TABSTOP, WS_EX_RIGHT
-    LTEXT           "Vertical FOV:  60 (Hor 91)", IDC_FOV_DEGREES, 358, 188, 93, 9, SS_LEFT | SS_CENTERIMAGE | SS_NOTIFY, WS_EX_LEFT
-    CONTROL         "Field of View Slider", IDC_FOV, TRACKBAR_CLASS, WS_TABSTOP | TBS_NOTICKS, 274, 198, 175, 12, WS_EX_LEFT
-    LTEXT           "Default FOV", IDC_FOV_NOTE, 279, 211, 80, 8, SS_LEFT | SS_NOTIFY, WS_EX_LEFT
-    AUTOCHECKBOX    "Show Crosshair (GE)", IDC_GESHOWCROSSHAIR, 363, 211, 81, 8, WS_TABSTOP, WS_EX_RIGHT
-    GROUPBOX        "Info", IDC_INFOBOX, 271, 224, 181, 68, NOT WS_TABSTOP, WS_EX_RIGHT
-    CTEXT           "These controls have been designed for the 1.2 controller profile in GE/PD. You will need to change the in-game settings for this profile to work. Read the bundle readme FAQ for further instructions.\r\n\r\nIf you want to use a USB controller, change the input plugin to N-Rage Or DirectInput.", IDC_INFO, 273, 232, 177, 58, NOT WS_GROUP | SS_CENTER, WS_EX_TRANSPARENT
-    PUSHBUTTON      "Revert", IDC_REVERT, 298, 295, 60, 14, 0, WS_EX_LEFT
-    PUSHBUTTON      "Clear", IDC_CLEAR, 364, 295, 60, 14, 0, WS_EX_LEFT
+    AUTOCHECKBOX    "Reverse Mouse Pitch", IDC_INVERTPITCH, 271, 134, 86, 17, WS_TABSTOP, WS_EX_LEFT
+    AUTOCHECKBOX    "Cursor Aiming (GE)", IDC_GECURSORAIMING, 369, 134, 83, 17, WS_TABSTOP, WS_EX_RIGHT
+    AUTOCHECKBOX    "Crouch Toggle", IDC_CROUCHTOGGLE, 271, 150, 65, 17, WS_TABSTOP, WS_EX_LEFT
+    AUTOCHECKBOX    "Cursor Aiming (PD)", IDC_PDCURSORAIMING, 369, 150, 83, 17, WS_TABSTOP, WS_EX_RIGHT
+    GROUPBOX        "All Players", IDC_ALLPLAYERS, 271, 168, 181, 64, 0, WS_EX_RIGHT
+    LTEXT           "16 x 9 Ratio Override:", IDC_RATIOSTATIC, 279, 179, 76, 9, SS_LEFT, WS_EX_LEFT
+    EDITTEXT        IDC_RATIOWIDTH, 398, 178, 15, 12, ES_CENTER | ES_AUTOHSCROLL | ES_NUMBER, WS_EX_LEFT
+    CTEXT           "x", IDC_RATIOSTATICX, 417, 179, 8, 9, SS_LEFT | SS_CENTER, WS_EX_LEFT
+    EDITTEXT        IDC_RATIOHEIGHT, 428, 178, 15, 12, ES_CENTER | ES_AUTOHSCROLL | ES_NUMBER, WS_EX_LEFT
+    PUSHBUTTON      "Reset FOV", IDC_RESETFOV, 278, 192, 40, 9, WS_TABSTOP, WS_EX_RIGHT
+    LTEXT           "Vertical FOV:  60 (Hor 91)", IDC_FOV_DEGREES, 358, 192, 93, 9, SS_LEFT | SS_CENTERIMAGE | SS_NOTIFY, WS_EX_LEFT
+    CONTROL         "Field of View Slider", IDC_FOV, TRACKBAR_CLASS, WS_TABSTOP | TBS_NOTICKS, 274, 202, 175, 14, WS_EX_LEFT
+    LTEXT           "Default FOV", IDC_FOV_NOTE, 279, 217, 80, 8, SS_LEFT | SS_NOTIFY, WS_EX_LEFT
+    AUTOCHECKBOX    "Show Crosshair (GE)", IDC_GESHOWCROSSHAIR, 363, 217, 81, 8, WS_TABSTOP, WS_EX_RIGHT
+    GROUPBOX        "Info", IDC_INFOBOX, 271, 235, 181, 52, NOT WS_TABSTOP, WS_EX_RIGHT
+    CTEXT           "For multiplayer, connect multiple mice/keyboards and restart 1964, then select the device per player.\r\n\r\nIf you wish to use a USB controller, change the input plugin to N-Rage Or DirectInput.", IDC_INFO, 274, 243, 176, 41, NOT WS_GROUP | SS_CENTER, WS_EX_TRANSPARENT
+    PUSHBUTTON      "Revert", IDC_REVERT, 298, 292, 60, 14, WS_TABSTOP, WS_EX_LEFT
+    PUSHBUTTON      "Clear", IDC_CLEAR, 364, 292, 60, 14, WS_TABSTOP, WS_EX_LEFT
     CTEXT           "", IDC_PARTITION, 7, 312, 456, 2, SS_CENTER | SS_SUNKEN, WS_EX_LEFT
     RTEXT           "Toggle Injection", IDC_LOCK_LABEL, 17, 320, 70, 15, SS_RIGHT | SS_CENTERIMAGE, WS_EX_TRANSPARENT
     PUSHBUTTON      "Lock", IDC_LOCK, 97, 321, 70, 14, WS_GROUP | BS_FLAT, WS_EX_LEFT
@@ -138,8 +138,8 @@ FONT 8, "MS Shell Dlg", 0, 0, 0
 //
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 1 VERSIONINFO
-    FILEVERSION     2,0,0,0
-    PRODUCTVERSION  2,0,0,0
+    FILEVERSION     2,1,0,0
+    PRODUCTVERSION  2,1,0,0
     FILEOS          VOS_NT_WINDOWS32
     FILETYPE        VFT_DLL
     FILESUBTYPE     VFT2_UNKNOWN
@@ -151,12 +151,12 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
         BLOCK "040904B0"
         {
             VALUE "FileDescription", "Mouse Injector for 1964"
-            VALUE "FileVersion", "2, 0, 0, 0"
+            VALUE "FileVersion", "2, 1, 0, 0"
             VALUE "InternalName", "Mouse Injector"
             VALUE "LegalCopyright", "Copyright (C) 2020 Carnivorous"
             VALUE "OriginalFilename", "Mouse_Injector.dll"
             VALUE "ProductName", "Mouse Injector for GE/PD"
-            VALUE "ProductVersion", "2, 0, 0, 0"
+            VALUE "ProductVersion", "2, 1, 0, 0"
         }
     }
     BLOCK "VarFileInfo"

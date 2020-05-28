@@ -69,6 +69,8 @@
 #define PD_defaultzoominspeed 0x802DA8F8 // default zoom in speed
 #define PD_defaultzoomoutspeed 0x802DA924 // default zoom out speed
 #define PD_introcounter 0x800624C4 // counter for intro
+#define PD_controlstyle 0x80372728 // instruction to read the current controller style
+#define PD_reversepitch 0x803727A0 // function used to read the current controller style
 #define PD_pickupyaxisthreshold 0x803CAE78 // y axis threshold on picking up weapons
 #define PD_weapontable 0x8006FF1C // weapon pointer table, used to change view model positions
 #define PD_radialmenutimer 0x802EA2BC // time instruction for radial menu to appear (15 ticks)
@@ -458,6 +460,10 @@ static void PD_InjectHacks(void)
 	for(int index = 0; index < 33; index++) // inject code array
 		EMU_WriteInt(addressarray[index], codearray[index]);
 #ifndef SPEEDRUN_BUILD // gives unfair advantage, remove for speedrun build
+	if((unsigned int)EMU_ReadInt(PD_controlstyle) == 0x9042C7FC) // if safe to overwrite
+		EMU_WriteInt(PD_controlstyle, 0x34020001); // always force game to use 1.2 control style
+	if((unsigned int)EMU_ReadInt(PD_reversepitch) == 0x000F102B) // if safe to overwrite
+		EMU_WriteInt(PD_reversepitch, 0x34020001); // always force game to use upright pitch
 	if((unsigned int)EMU_ReadInt(PD_pickupyaxisthreshold) == 0xBF4907A9) // if safe to overwrite
 		EMU_WriteFloat(PD_pickupyaxisthreshold, -60.f * PI / 180.f); // overwrite default y axis limit for picking up items (from -45 to -60)
 	if((unsigned int)EMU_ReadInt(PD_radialmenutimer) == 0x28410010 && emuoverclock) // make radial menu trigger quicker (from 15 to 7 ticks)
