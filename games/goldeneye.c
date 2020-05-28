@@ -61,8 +61,8 @@
 #define GE_crosshairimage 0x0029DE8C // crosshair image (rom)
 #define GE_introcounter 0x8002A8CC // counter for intro
 #define GE_seenintroflag 0x8002A930 // seen intro flag
-#define GE_controlstyle 0x000D98FC // instruction to read the current controller style
-#define GE_reversepitch 0x000D9970 // function used to read the current controller style (rom)
+#define GE_controlstyle 0x000D98FC // instruction reads the current controller style (rom)
+#define GE_reversepitch 0x000D9970 // instruction reads the current reverse pitch option (rom)
 #define GE_pickupyaxisthreshold 0x800532E0 // y axis threshold on picking up weapons
 #define GE_weaponypos 0x8003249C // y axis position for view models
 #define GE_weaponzpos (GE_weaponypos + 4) // z axis position for view models

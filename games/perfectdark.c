@@ -69,8 +69,8 @@
 #define PD_defaultzoominspeed 0x802DA8F8 // default zoom in speed
 #define PD_defaultzoomoutspeed 0x802DA924 // default zoom out speed
 #define PD_introcounter 0x800624C4 // counter for intro
-#define PD_controlstyle 0x80372728 // instruction to read the current controller style
-#define PD_reversepitch 0x803727A0 // function used to read the current controller style
+#define PD_controlstyle 0x80372728 // instruction reads the current controller style
+#define PD_reversepitch 0x803727A0 // instruction reads the current reverse pitch option
 #define PD_pickupyaxisthreshold 0x803CAE78 // y axis threshold on picking up weapons
 #define PD_weapontable 0x8006FF1C // weapon pointer table, used to change view model positions
 #define PD_radialmenutimer 0x802EA2BC // time instruction for radial menu to appear (15 ticks)
