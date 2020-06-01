@@ -25,7 +25,7 @@
 #include "./manymouse/manymouse.h"
 #include "./games/game.h"
 
-#define VK_LBUTTON 0x01
+#define VK_LBUTTON 0x01 // IDs from vkey.h
 #define VK_RBUTTON 0x02
 #define VK_MBUTTON 0x04
 #define VK_XBUTTON1 0x05
@@ -104,7 +104,7 @@ DWORD WINAPI DEV_InjectThread()
 	}
 	while(!stopthread)
 	{
-		if(mousetoggle && lockmousecounter % (emuoverclock ? 5 : 2) == 0) // don't execute every tick
+		if(mousetoggle && lockmousecounter % (emuoverclock ? 4 : 2) == 0) // don't execute every tick
 			SetCursorPos(lockpos.x, lockpos.y); // set mouse position to lock position
 		lockmousecounter++; // overflow pseudo-counter
 		if(togglebuffer > 0)
@@ -112,7 +112,7 @@ DWORD WINAPI DEV_InjectThread()
 		for(int player = PLAYER1; player < ALLPLAYERS; player++)
 		{
 			DEVICE[player].XPOS = 0, DEVICE[player].YPOS = 0; // reset mouse input
-			if(DEVICE[player].WHEEL <= 1)  // mouse wheel is not an instant key - treat with cooldown and turn button off once cooled off
+			if(DEVICE[player].WHEEL <= 1) // mouse wheel is not an instant key - treat with cooldown and turn button off once cooled off
 			{
 				DEVICE[player].WHEEL = 0;
 				for(int button = 0; button < 16; button++) // reset wheel scroll once cooled down
