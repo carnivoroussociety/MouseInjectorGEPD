@@ -245,7 +245,7 @@ static void GE_Crouch(const int player)
 			safetocrouch[player] = 0, crouchstance[player] = 1;
 		else if(!safetocrouch[player] && !crouchheld) // crouch is no longer being held, ready to stand
 			safetostand[player] = 1;
-		if(safetostand[player] && crouchheld) // standing up
+		if(safetostand[player] && crouchheld) // stand up
 			safetocrouch[player] = 1, crouchstance[player] = 0;
 		else if(safetostand[player] && safetocrouch[player] && !crouchheld) // crouch key not active, ready to toggle
 			safetostand[player] = 0;

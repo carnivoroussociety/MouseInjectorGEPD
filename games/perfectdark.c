@@ -291,19 +291,19 @@ static void PD_Crouch(const int player)
 		stance = 1;
 	if(PROFILE[player].SETTINGS[CROUCHTOGGLE]) // check and toggle player stance
 	{
-		const int crouchorkneel = crouchheld || kneelheld;
-		if(safetocrouch[player] && crouchorkneel) // stand to crouch/kneel
+		const int crouchkneelheld = crouchheld || kneelheld; // holding down crouch/kneel
+		if(safetocrouch[player] && crouchkneelheld) // stand to crouch/kneel
 			safetocrouch[player] = 0, crouchstance[player] = crouchheld ? 0 : 1;
-		else if(!safetocrouch[player] && !crouchorkneel) // crouch/kneel is no longer being held, ready to stand
+		else if(!safetocrouch[player] && !crouchkneelheld) // crouch/kneel is no longer being held, ready to stand
 			safetostand[player] = 1;
-		if(safetostand[player] && crouchorkneel) // toggle to other stance
+		if(safetostand[player] && crouchkneelheld) // toggle to other stance
 		{
 			if(crouchheld && crouchstance[player] == 0 || kneelheld && crouchstance[player] == 1) // if pressed crouch/kneel twice, stand up
 				safetocrouch[player] = 1, crouchstance[player] = 2;
 			else
 				safetostand[player] = 0, crouchstance[player] = crouchheld ? 0 : 1; // switch to the other crouch stance (kneel/crouch)
 		}
-		else if(safetostand[player] && safetocrouch[player] && !crouchorkneel) // crouch key not active, ready to toggle
+		else if(safetostand[player] && safetocrouch[player] && !crouchkneelheld) // crouch/kneel key not active, ready to toggle
 			safetostand[player] = 0;
 		stance = crouchstance[player];
 	}
