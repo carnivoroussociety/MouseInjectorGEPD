@@ -37,13 +37,13 @@
 
 static int alreadyexec = 0; // has init already exec?
 static int connected = 0; // number of devices connected
-static POINT lockpos; // coords for mouse lock position
+static POINT lockpos = {0}; // coords for mouse lock position
 
 int windowactive = 1; // is emulator window active?
 
 int DEV_Init(void);
 void DEV_Quit(void);
-void *DEV_PollInput();
+DWORD WINAPI DEV_InjectThread();
 int DEV_ReturnKey(void);
 int DEV_ReturnDeviceID(const int devicetype);
 const char *DEV_Name(const int id);
@@ -115,7 +115,7 @@ DWORD WINAPI DEV_InjectThread()
 			if(DEVICE[player].WHEEL <= 1) // mouse wheel is not an instant key - treat with cooldown and turn button off once cooled off
 			{
 				DEVICE[player].WHEEL = 0;
-				for(int button = 0; button < 16; button++) // reset wheel scroll once cooled down
+				for(int button = 0; button < TOTALBUTTONS; button++) // reset wheel scroll once cooled down
 				{
 					if(PROFILE[player].BUTTONPRIM[button] == VK_WHEELUP || PROFILE[player].BUTTONPRIM[button] == VK_WHEELDOWN || PROFILE[player].BUTTONPRIM[button] == VK_WHEELLEFT || PROFILE[player].BUTTONPRIM[button] == VK_WHEELRIGHT)
 						DEVICE[player].BUTTONPRIM[button] = 0;
@@ -144,7 +144,7 @@ DWORD WINAPI DEV_InjectThread()
 					}
 					if(event.type == MANYMOUSE_EVENT_BUTTON) // key presses
 					{
-						for(int button = 0; button < 16; button++)
+						for(int button = 0; button < TOTALBUTTONS; button++)
 						{
 							int offset = event.item > 1 ? 2 : 1; // mouse button needs offset to sync with VK table (left click + offset = 0x01 aka VK_LBUTTON and right click + offset = 0x02 aka VK_RBUTTON)
 							if(PROFILE[player].BUTTONPRIM[button] == (int)event.item + offset)
@@ -155,7 +155,7 @@ DWORD WINAPI DEV_InjectThread()
 					}
 					if(event.type == MANYMOUSE_EVENT_SCROLL) // mouse wheel
 					{
-						for(int button = 0; button < 16; button++)
+						for(int button = 0; button < TOTALBUTTONS; button++)
 						{
 							if(event.item == 0) // if VK_WHEELUP/VK_WHEELDOWN
 							{
@@ -177,7 +177,7 @@ DWORD WINAPI DEV_InjectThread()
 				}
 				if(event.type == MANYMOUSE_EVENT_KEYBOARD && (PROFILE[player].SETTINGS[KEYBOARD] == (int)event.device || acceptalldevices))
 				{
-					for(int button = 0; button < 16; button++) // check for key presses
+					for(int button = 0; button < TOTALBUTTONS; button++) // check for key presses
 					{
 						if(PROFILE[player].BUTTONPRIM[button] == (int)event.item)
 							DEVICE[player].BUTTONPRIM[button] = event.value;
@@ -216,8 +216,8 @@ DWORD WINAPI DEV_InjectThread()
 		}
 		else
 			checkwindowtick++;
-		if(windowactive && GAME_Status()) // if emulator is focused and game is valid
-			GAME_Inject(); // inject game
+		if(windowactive && GAME_Status() && !configdialogopen) // if emulator is focused, game is valid and config dialog isn't open
+			GAME_Inject(); // send input to game driver
 		Sleep(emuoverclock ? 2 : 4); // 2ms (500 Hz) for overclocked, 4ms (250 Hz) for stock speed
 	}
 	return 0;

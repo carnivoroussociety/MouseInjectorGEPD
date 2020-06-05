@@ -28,7 +28,7 @@
 #define TANKXROTATIONLIMIT 6.283185005 // 0x40C90FDA
 #define PI 3.1415927 // 0x40490FDB
 // GOLDENEYE ADDRESSES - OFFSET ADDRESSES BELOW (REQUIRES PLAYERBASE TO USE)
-#define GE_crouchflag 0x800D2FFC - 0x800D2F60
+#define GE_stanceflag 0x800D2FFC - 0x800D2F60
 #define GE_deathflag 0x800D3038 - 0x800D2F60
 #define GE_camx 0x800D30A8 - 0x800D2F60
 #define GE_camy 0x800D30B8 - 0x800D2F60
@@ -67,15 +67,15 @@
 #define GE_weaponypos 0x8003249C // y axis position for view models
 #define GE_weaponzpos (GE_weaponypos + 4) // z axis position for view models
 
-static unsigned int playerbase[4] = {0, 0, 0, 0}; // current player's bonddata address
-static int safetoduck[4] = {1, 1, 1, 1}, safetostand[4] = {0, 0, 0, 0}, crouchstance[4] = {0, 0, 0, 0}; // used for crouch toggle changes (limits tick-tocking)
+static unsigned int playerbase[4] = {0}; // current player's bonddata address
+static int safetocrouch[4] = {1}, safetostand[4] = {0}, crouchstance[4] = {0}; // used for crouch toggle (limits tick-tocking)
 static float crosshairposx[4], crosshairposy[4], aimx[4], aimy[4];
 
 static int GE_Status(void);
 static void GE_DetectMap(void);
 static void GE_Inject(void);
 static void GE_Crouch(const int player);
-#define GE_ResetCrouchToggle(X) safetoduck[X] = 1, safetostand[X] = 0, crouchstance[X] = 0 // reset crouch toggle bind
+#define GE_ResetCrouchToggle(X) safetocrouch[X] = 1, safetostand[X] = 0, crouchstance[X] = 0 // reset crouch toggle bind
 static void GE_AimMode(const int player, const int aimingflag, const float fov, const float basefov);
 static void GE_Controller(void);
 static void GE_InjectHacks(void);
@@ -104,7 +104,7 @@ static int GE_Status(void)
 }
 //==========================================================================
 // Purpose: detect map change and update playerbase
-// Changes Globals: playerbase, safetoduck, safetostand, crouchstance
+// Changes Globals: playerbase, safetocrouch, safetostand, crouchstance
 //==========================================================================
 static void GE_DetectMap(void)
 {
@@ -119,7 +119,7 @@ static void GE_DetectMap(void)
 }
 //==========================================================================
 // Purpose: calculate mouse movement and inject into current game
-// Changes Globals: safetoduck, safetostand, crouchstance
+// Changes Globals: safetocrouch, safetostand, crouchstance
 // Q: Could you explain !aimingflag ? 10.0f : 40.0f
 // A: While the player is aiming weapon sway will be reduced by 75%. While this is not in the original design of GE/PD I feel it gives a legitimate advantage for aiming instead of only making the crosshair visible
 // Q: Could you explain basefov = fov > 60.0f ? (float)OVERRIDEFOV : 60.0f
@@ -233,28 +233,25 @@ static void GE_Inject(void)
 	GE_Controller(); // set controller data
 }
 //==========================================================================
-// Purpose: crouching function for GoldenEye (2 = stand, 0 = duck)
-// Changes Globals: safetoduck, crouchstance, safetostand
+// Purpose: crouching function for GoldenEye (2 = stand, 1 = kneel (in tank), 0 = crouch)
+// Changes Globals: safetocrouch, crouchstance, safetostand
 //==========================================================================
 static void GE_Crouch(const int player)
 {
-	int crouchheld = DEVICE[player].BUTTONPRIM[CROUCH] || DEVICE[player].BUTTONSEC[CROUCH];
-	if(PROFILE[player].SETTINGS[CROUCHTOGGLE]) // check and change player stance
+	int crouchheld = DEVICE[player].BUTTONPRIM[CROUCH] || DEVICE[player].BUTTONSEC[CROUCH] || DEVICE[player].BUTTONPRIM[KNEEL] || DEVICE[player].BUTTONSEC[KNEEL];
+	if(PROFILE[player].SETTINGS[CROUCHTOGGLE]) // check and toggle player stance
 	{
-		if(safetoduck[player] && crouchheld) // standing to ducking
-			safetoduck[player] = 0, crouchstance[player] = 1;
-		if(!safetoduck[player] && !crouchheld) // crouch is no longer being held, ready to stand
+		if(safetocrouch[player] && crouchheld) // standing to crouching
+			safetocrouch[player] = 0, crouchstance[player] = 1;
+		else if(!safetocrouch[player] && !crouchheld) // crouch is no longer being held, ready to stand
 			safetostand[player] = 1;
 		if(safetostand[player] && crouchheld) // standing up
-			safetoduck[player] = 1, crouchstance[player] = 0;
-		if(safetostand[player] && safetoduck[player] && !crouchheld) // crouch key not active, ready to change toggle
+			safetocrouch[player] = 1, crouchstance[player] = 0;
+		else if(safetostand[player] && safetocrouch[player] && !crouchheld) // crouch key not active, ready to toggle
 			safetostand[player] = 0;
 		crouchheld = crouchstance[player];
 	}
-	if(crouchheld) // user is holding down the crouch button
-		EMU_WriteInt(playerbase[player] + GE_crouchflag, 0); // set in-game crouch flag to lowest point
-	else // player isn't holding down crouch
-		EMU_WriteInt(playerbase[player] + GE_crouchflag, 2); // force standing flag value
+	EMU_WriteInt(playerbase[player] + GE_stanceflag, !crouchheld ? 2 : 0); // set in-game stance
 }
 //==========================================================================
 // Purpose: replicate the original aiming system, uses aimx/y to move screen when crosshair is on border of screen
@@ -375,7 +372,7 @@ static void GE_InjectHacks(void)
 }
 //==========================================================================
 // Purpose: run when emulator closes rom
-// Changes Globals: playerbase, safetoduck, safetostand, crouchstance
+// Changes Globals: playerbase, safetocrouch, safetostand, crouchstance
 //==========================================================================
 static void GE_Quit(void)
 {

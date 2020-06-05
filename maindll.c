@@ -40,7 +40,6 @@ static int lastinputbutton = 0; // used to check and see if user pressed button 
 static int currentplayer = PLAYER1;
 static int defaultmouse = -1, defaultkeyboard = -1;
 static CONTROL *ctrlptr = NULL;
-static int currentlyconfiguring = 0;
 static int changeratio = 0; // used to display different hoz fov for 4:3/16:9 ratio
 static int guibusy = 1; // flag to bypass gui message pump
 
@@ -51,6 +50,7 @@ int mousetogglekey = 0x34; // default key is 4
 int mousetoggle = 0; // mouse lock
 int mouselockonfocus = 0; // lock mouse when 1964 is focused
 int mouseunlockonloss = 1; // unlock mouse when 1964 is unfocused
+int configdialogopen = 0; // used to bypass input if config dialog is open
 HWND emulatorwindow = NULL;
 int emuoverclock = 1; // is this emu overclocked?
 int overridefov = 60; // fov override
@@ -99,7 +99,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		case DLL_PROCESS_ATTACH:
 		{
 			hInst = hinstDLL;
-			wchar_t filepath[MAX_PATH], directory[MAX_PATH];
+			wchar_t filepath[MAX_PATH] = {L'\0'}, directory[MAX_PATH] = {L'\0'};
 			GetModuleFileNameW(hInst, filepath, MAX_PATH);
 			if(filepath != NULL)
 			{
@@ -147,14 +147,14 @@ static int Init(const HWND hW)
 }
 //==========================================================================
 // Purpose: close plugin
-// Changed Globals: currentlyconfiguring, mousetoggle, lastinputbutton, rdramptr, romptr, ctrlptr
+// Changed Globals: configdialogopen, mousetoggle, lastinputbutton, rdramptr, romptr, ctrlptr
 //==========================================================================
 static void End(void)
 {
 	StopInjection(); // stop device/injection thread
 	DEV_Quit(); // shutdown manymouse
 	DRP_Quit(); // shutdown discord rich presence
-	currentlyconfiguring = 0;
+	configdialogopen = 0;
 	mousetoggle = 0;
 	lastinputbutton = 0;
 	rdramptr = 0;
@@ -217,7 +217,7 @@ static BOOL CALLBACK GUI_Config(HWND hW, UINT uMsg, WPARAM wParam, LPARAM lParam
 					EndDialog(hW, FALSE);
 					return TRUE;
 				case IDC_HELPPOPUP:
-					MessageBox(hW, "\tIf you are having issues, please read the file\n\tBUNDLE_README.txt located in the 1964 directory.\n\n\tMouse Injector for GE/PD, Copyright (C) "__CURRENTYEAR__" Carnivorous\n\tMouse Injector comes with ABSOLUTELY NO WARRANTY;\n\tThis is free software, and you are welcome to redistribute it\n\tunder the terms of the GNU General Public License.\n\n\tThis plugin is powered by ManyMouse input library,\n\tCopyright (C) 2005-2012 Ryan C. Gordon <icculus.org>", "Mouse Injector - Help", MB_ICONINFORMATION | MB_OK);
+					MessageBoxA(hW, "\tIf you are having issues, please read the file\n\tBUNDLE_README.txt located in the 1964 directory.\n\n\tMouse Injector for GE/PD, Copyright (C) "__CURRENTYEAR__" Carnivorous\n\tMouse Injector comes with ABSOLUTELY NO WARRANTY;\n\tThis is free software, and you are welcome to redistribute it\n\tunder the terms of the GNU General Public License.\n\n\tThis plugin is powered by ManyMouse input library,\n\tCopyright (C) 2005-2012 Ryan C. Gordon <icculus.org>", "Mouse Injector - Help", MB_ICONINFORMATION | MB_OK);
 					break;
 				case IDC_CANCEL:
 					INI_Load(hW, ALLPLAYERS); // reload all player settings from file
@@ -263,6 +263,7 @@ static BOOL CALLBACK GUI_Config(HWND hW, UINT uMsg, WPARAM wParam, LPARAM lParam
 				case IDC_PRIMARY13:
 				case IDC_PRIMARY14:
 				case IDC_PRIMARY15:
+				case IDC_PRIMARY16:
 					GUI_ProcessKey(hW, LOWORD(wParam), 0);
 					break;
 				case IDC_SECONDARY00:
@@ -281,15 +282,19 @@ static BOOL CALLBACK GUI_Config(HWND hW, UINT uMsg, WPARAM wParam, LPARAM lParam
 				case IDC_SECONDARY13:
 				case IDC_SECONDARY14:
 				case IDC_SECONDARY15:
+				case IDC_SECONDARY16:
 					GUI_ProcessKey(hW, LOWORD(wParam), 1);
 					break;
 				case IDC_INVERTPITCH:
 				case IDC_CROUCHTOGGLE:
 				case IDC_GECURSORAIMING:
 				case IDC_PDCURSORAIMING:
-					PROFILE[currentplayer].SETTINGS[LOWORD(wParam) - IDC_INVERTPITCH + INVERTPITCH] = SendMessage(GetDlgItem(hW, LOWORD(wParam)), BM_GETCHECK, 0, 0);
-					EnableWindow(GetDlgItem(hW, IDC_REVERT), 1);
-					break;
+					{
+						const int settingenum = ClampInt((LOWORD(wParam) - IDC_INVERTPITCH), 0, 4) + INVERTPITCH; // get current modified setting enumeration
+						PROFILE[currentplayer].SETTINGS[settingenum] = SendMessage(GetDlgItem(hW, LOWORD(wParam)), BM_GETCHECK, 0, 0);
+						EnableWindow(GetDlgItem(hW, IDC_REVERT), 1);
+						break;
+					}
 				case IDC_RESETFOV:
 					overridefov = 60;
 					GUI_Refresh(hW, 2); // fov is a global option that applies to all players, send ignore revert button's state and refresh labels and slider
@@ -300,7 +305,7 @@ static BOOL CALLBACK GUI_Config(HWND hW, UINT uMsg, WPARAM wParam, LPARAM lParam
 					{
 						changeratio = !changeratio;
 						GUI_Refresh(hW, 2);
-						SetDlgItemText(hW, IDC_FOV_NOTE, changeratio ? "FOV - 4:3 Ratio" : "FOV - 16:9 Ratio");
+						SetDlgItemTextA(hW, IDC_FOV_NOTE, changeratio ? "FOV - 4:3 Ratio" : "FOV - 16:9 Ratio");
 					}
 					break;
 				case IDC_GESHOWCROSSHAIR:
@@ -310,10 +315,10 @@ static BOOL CALLBACK GUI_Config(HWND hW, UINT uMsg, WPARAM wParam, LPARAM lParam
 				case IDC_RATIOWIDTH:
 					if(stopthread) // do this if game isn't running
 					{
-						char inputratio[4];
-						GetDlgItemText(hW, IDC_RATIOWIDTH, inputratio, 3); // get ratio strings
+						char inputratio[4] = {'\0'};
+						GetDlgItemTextA(hW, IDC_RATIOWIDTH, inputratio, 3); // get ratio strings
 						overrideratiowidth = ClampInt(atoi(inputratio), 1, 99);
-						GetDlgItemText(hW, IDC_RATIOHEIGHT, inputratio, 3);
+						GetDlgItemTextA(hW, IDC_RATIOHEIGHT, inputratio, 3);
 						overrideratioheight = ClampInt(atoi(inputratio), 1, 99);
 						GUI_Refresh(hW, 2); // refresh and ignore revert button's state (ratio override is a global option for all players, ignore revert button because player's profile didn't change)
 					}
@@ -369,12 +374,12 @@ static void GUI_Init(const HWND hW)
 	{
 		char devicename[256];
 		sprintf(devicename, "%d: %s", DEV_TypeIndex(connectedindex), DEV_Name(connectedindex)); // create string for combobox
-		SendMessage(GetDlgItem(hW, DEV_Type(connectedindex) == MOUSETYPE ? IDC_MOUSESELECT : IDC_KEYBOARDSELECT), CB_ADDSTRING, 0, (LPARAM)devicename); // add device to appropriate combobox
+		SendMessageA(GetDlgItem(hW, DEV_Type(connectedindex) == MOUSETYPE ? IDC_MOUSESELECT : IDC_KEYBOARDSELECT), CB_ADDSTRING, 0, (LPARAM)devicename); // add device to appropriate combobox
 	}
-	SendMessage(GetDlgItem(hW, IDC_CONFIGBOX), CB_ADDSTRING, 0, (LPARAM)"Disabled"); // add default configs
-	SendMessage(GetDlgItem(hW, IDC_CONFIGBOX), CB_ADDSTRING, 0, (LPARAM)"WASD");
-	SendMessage(GetDlgItem(hW, IDC_CONFIGBOX), CB_ADDSTRING, 0, (LPARAM)"ESDF");
-	SendMessage(GetDlgItem(hW, IDC_CONFIGBOX), CB_ADDSTRING, 0, (LPARAM)"Custom");
+	SendMessageA(GetDlgItem(hW, IDC_CONFIGBOX), CB_ADDSTRING, 0, (LPARAM)"Disabled"); // add default configs
+	SendMessageA(GetDlgItem(hW, IDC_CONFIGBOX), CB_ADDSTRING, 0, (LPARAM)"WASD");
+	SendMessageA(GetDlgItem(hW, IDC_CONFIGBOX), CB_ADDSTRING, 0, (LPARAM)"ESDF");
+	SendMessageA(GetDlgItem(hW, IDC_CONFIGBOX), CB_ADDSTRING, 0, (LPARAM)"Custom");
 	SendMessage(GetDlgItem(hW, IDC_SLIDER00), TBM_SETRANGEMIN, 0, 0); // set trackbar stats
 	SendMessage(GetDlgItem(hW, IDC_SLIDER00), TBM_SETRANGEMAX, 0, 100);
 	SendMessage(GetDlgItem(hW, IDC_SLIDER01), TBM_SETRANGEMIN, 0, 0);
@@ -387,13 +392,13 @@ static void GUI_Init(const HWND hW)
 	SendMessage(GetDlgItem(hW, IDC_RATIOHEIGHT), EM_SETLIMITTEXT, 2, 0);
 	char overrideratio[4];
 	sprintf(overrideratio, "%d", overrideratiowidth); // set ratio override
-	SetDlgItemText(hW, IDC_RATIOWIDTH, overrideratio);
+	SetDlgItemTextA(hW, IDC_RATIOWIDTH, overrideratio);
 	sprintf(overrideratio, "%d", overrideratioheight);
-	SetDlgItemText(hW, IDC_RATIOHEIGHT, overrideratio);
+	SetDlgItemTextA(hW, IDC_RATIOHEIGHT, overrideratio);
 #ifdef SPEEDRUN_BUILD // hide fov/ratio elements for speedrun build and replace info box with details about the speedrun build
 	for(int index = IDC_RATIOSTATIC; index <= IDC_FOV_NOTE; index++)
 		ShowWindow(GetDlgItem(hW, index), 0);
-	SetDlgItemText(hW, IDC_INFO, "The speedrun build removes the FOV/ratio adjustment and doesn't force you to use 1.2 controller style.\n\nIt also removes the Y axis pickup threshold adjustment so it is the same as the original game.");
+	SetDlgItemTextA(hW, IDC_INFO, "The speedrun build removes the FOV/ratio adjustment and doesn't force you to use 1.2 controller style.\n\nIt also removes the Y axis pickup threshold adjustment so it is the same as the original game.");
 #endif
 }
 //==========================================================================
@@ -410,11 +415,11 @@ static void GUI_Refresh(const HWND hW, const int revertbtn)
 	// set config profile combobox
 	SendMessage(GetDlgItem(hW, IDC_CONFIGBOX), CB_SETCURSEL, PROFILE[currentplayer].SETTINGS[CONFIG], 0); // set DISABLED/WASD/ESDF/CUSTOM config combobox
 	// load buttons from current player's profile
-	for(int button = 0; button < 16; button++) // load buttons from player struct and set input button statuses (setting to disabled/enabled)
+	for(int button = 0; button < TOTALBUTTONS; button++) // load buttons from player struct and set input button statuses (setting to disabled/enabled)
 	{
-		SetDlgItemText(hW, IDC_PRIMARY00 + button, GetKeyName(PROFILE[currentplayer].BUTTONPRIM[button])); // get key
+		SetDlgItemTextA(hW, IDC_PRIMARY00 + button, GetKeyName(PROFILE[currentplayer].BUTTONPRIM[button])); // get key
+		SetDlgItemTextA(hW, IDC_SECONDARY00 + button, GetKeyName(PROFILE[currentplayer].BUTTONSEC[button]));
 		EnableWindow(GetDlgItem(hW, IDC_PRIMARY00 + button), PROFILE[currentplayer].SETTINGS[CONFIG] != DISABLED); // set status
-		SetDlgItemText(hW, IDC_SECONDARY00 + button, GetKeyName(PROFILE[currentplayer].BUTTONSEC[button]));
 		EnableWindow(GetDlgItem(hW, IDC_SECONDARY00 + button), PROFILE[currentplayer].SETTINGS[CONFIG] != DISABLED);
 	}
 	// set keyboard/mouse to id stored in player's profile (only if they are valid)
@@ -445,40 +450,40 @@ static void GUI_Refresh(const HWND hW, const int revertbtn)
 		sprintf(label, "%d%%", PROFILE[currentplayer].SETTINGS[SENSITIVITY] * 5); // set percentage for sensitivity
 	else
 		sprintf(label, "None"); // replace 0% with none
-	SetDlgItemText(hW, IDC_SLIDER_DISPLAY00, label);
+	SetDlgItemTextA(hW, IDC_SLIDER_DISPLAY00, label);
 	if(PROFILE[currentplayer].SETTINGS[ACCELERATION]) // set mouse acceleration
 		sprintf(label, "%dx", PROFILE[currentplayer].SETTINGS[ACCELERATION]);
 	else
 		sprintf(label, "None"); // replace 0x with none
-	SetDlgItemText(hW, IDC_SLIDER_DISPLAY01, label);
+	SetDlgItemTextA(hW, IDC_SLIDER_DISPLAY01, label);
 	if(PROFILE[currentplayer].SETTINGS[CROSSHAIR]) // set percentage for crosshair movement
 		sprintf(label, "%d%%", PROFILE[currentplayer].SETTINGS[CROSSHAIR] * 100 / 6);
 	else
 		sprintf(label, "Locked"); // replace 0% with locked
-	SetDlgItemText(hW, IDC_SLIDER_DISPLAY02, label);
+	SetDlgItemTextA(hW, IDC_SLIDER_DISPLAY02, label);
 	// set fov label
 	if(stopthread) // if game isn't running
 	{
 		if(overridefov < 60)
-			SetDlgItemText(hW, IDC_FOV_NOTE, "Below Default");
+			SetDlgItemTextA(hW, IDC_FOV_NOTE, "Below Default");
 		else if(overridefov == 60)
-			SetDlgItemText(hW, IDC_FOV_NOTE, "Default FOV");
+			SetDlgItemTextA(hW, IDC_FOV_NOTE, "Default FOV");
 		else if(overridefov <= 80)
-			SetDlgItemText(hW, IDC_FOV_NOTE, "Above Default");
+			SetDlgItemTextA(hW, IDC_FOV_NOTE, "Above Default");
 		else if(overridefov <= 90)
-			SetDlgItemText(hW, IDC_FOV_NOTE, "Breaks ViewModels");
+			SetDlgItemTextA(hW, IDC_FOV_NOTE, "Breaks ViewModels");
 		else
-			SetDlgItemText(hW, IDC_FOV_NOTE, "Breaks ViewModels\\LOD");
+			SetDlgItemTextA(hW, IDC_FOV_NOTE, "Breaks ViewModels\\LOD");
 	}
 	else
-		SetDlgItemText(hW, IDC_FOV_NOTE, "Locked - Stop to Edit"); // fov can only be set at boot, tell user to stop emulating if they want to change fov
+		SetDlgItemTextA(hW, IDC_FOV_NOTE, "Locked - Stop to Edit"); // fov can only be set at boot, tell user to stop emulating if they want to change fov
 	// calculate and set fov (ge/pd format is vertical fov, convert to hor fov)
 	const double fovtorad = (double)overridefov * (3.1415 / 180.f);
 	const double setfov = 2.f * atan((tan(fovtorad / 2.f) / (0.75))) * (180.f / 3.1415);
 	const double aspect = changeratio ? 4.f / 3.f : (float)overrideratiowidth / (float)overrideratioheight;
 	const double hfov = 2.f * atan((tan(setfov / 2.f * (3.1415 / 180.f))) * (aspect * 0.75)) * (180.f / 3.1415);
 	sprintf(label, "Vertical FOV:  %d (Hor %d)", overridefov, (int)hfov); // set degrees for fov
-	SetDlgItemText(hW, IDC_FOV_DEGREES, label);
+	SetDlgItemTextA(hW, IDC_FOV_DEGREES, label);
 	// set checkboxes from current player's profile (invert aiming, crouch toggle, ge cursor aiming, pd radial navigation)
 	for(int index = 0; index < 4; index++) // set checkbox from player struct
 		SendMessage(GetDlgItem(hW, index + IDC_INVERTPITCH), BM_SETCHECK, PROFILE[currentplayer].SETTINGS[index + INVERTPITCH] ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -497,13 +502,13 @@ static void GUI_Refresh(const HWND hW, const int revertbtn)
 		EnableWindow(GetDlgItem(hW, IDC_REVERT), revertbtn); // set revert button status
 	// enable/disable clear button depending if buttons have been cleared
 	int allbuttonchecksum = 0;
-	for(int buttonindex = 0; buttonindex < 16; buttonindex++) // add button sum to allbuttonchecksum (used to check if clear button should be enabled)
+	for(int buttonindex = 0; buttonindex < TOTALBUTTONS; buttonindex++) // add button sum to allbuttonchecksum (used to check if clear button should be enabled)
 	{
 		allbuttonchecksum += PROFILE[currentplayer].BUTTONPRIM[buttonindex];
 		allbuttonchecksum += PROFILE[currentplayer].BUTTONSEC[buttonindex];
 	}
 	EnableWindow(GetDlgItem(hW, IDC_CLEAR), allbuttonchecksum > 0); // set clear button status
-	SetDlgItemText(hW, IDC_LOCK, GetKeyName(mousetogglekey)); // set mouse toggle text
+	SetDlgItemTextA(hW, IDC_LOCK, GetKeyName(mousetogglekey)); // set mouse toggle text
 	SendMessage(GetDlgItem(hW, IDC_LOCKONFOCUS), BM_SETCHECK, mouselockonfocus ? BST_CHECKED : BST_UNCHECKED, 0); // set mouse lock checkbox
 	SendMessage(GetDlgItem(hW, IDC_UNLOCKONWINLOSS), BM_SETCHECK, mouseunlockonloss ? BST_CHECKED : BST_UNCHECKED, 0); // set mouse unlock checkbox
 	guibusy = 0; // finished refreshing gui, safe to process messages now
@@ -524,7 +529,7 @@ static void GUI_ProcessKey(const HWND hW, const int buttonid, const int primflag
 	SendMessage(GetDlgItem(hW, IDC_CONFIGBOX), CB_SETCURSEL, CUSTOM, 0);
 	if(primflag != 2) // don't enable revert if pressed mouse toggle button
 		EnableWindow(GetDlgItem(hW, IDC_REVERT), 1);
-	SetDlgItemText(hW, buttonid, "...");
+	SetDlgItemTextA(hW, buttonid, "...");
 	int key = 0, tick = 0;
 	while(!key) // search for first key press
 	{
@@ -535,15 +540,15 @@ static void GUI_ProcessKey(const HWND hW, const int buttonid, const int primflag
 		else
 			DEV_ReturnKey(); // flush input
 		if(tick == 10)
-			SetDlgItemText(hW, buttonid, "..5..");
+			SetDlgItemTextA(hW, buttonid, "..5..");
 		else if(tick == 35)
-			SetDlgItemText(hW, buttonid, "..4..");
+			SetDlgItemTextA(hW, buttonid, "..4..");
 		else if(tick == 60)
-			SetDlgItemText(hW, buttonid, "..3..");
+			SetDlgItemTextA(hW, buttonid, "..3..");
 		else if(tick == 85)
-			SetDlgItemText(hW, buttonid, "..2..");
+			SetDlgItemTextA(hW, buttonid, "..2..");
 		else if(tick == 110)
-			SetDlgItemText(hW, buttonid, "..1..");
+			SetDlgItemTextA(hW, buttonid, "..1..");
 		if(tick >= 135 || key == VK_ESCAPE || primflag == 2 && (key >= VK_LBUTTON && key <= VK_XBUTTON2 || key == VK_WHEELUP || key == VK_WHEELDOWN || key == VK_WHEELRIGHT || key == VK_WHEELLEFT)) // user didn't enter anything in or pressed VK_ESCAPE, or set mouse toggle button to a mouse button
 		{
 			key = primflag < 2 ? 0x00 : 0x34; // if regular input button set to none, if mouse toggle button set to default key (4)
@@ -551,7 +556,7 @@ static void GUI_ProcessKey(const HWND hW, const int buttonid, const int primflag
 			break;
 		}
 	}
-	SetDlgItemText(hW, buttonid, GetKeyName(key));
+	SetDlgItemTextA(hW, buttonid, GetKeyName(key));
 	if(primflag == 0)
 		PROFILE[currentplayer].BUTTONPRIM[buttonid - IDC_PRIMARY00] = key;
 	else if(primflag == 1)
@@ -559,7 +564,7 @@ static void GUI_ProcessKey(const HWND hW, const int buttonid, const int primflag
 	else
 		mousetogglekey = key;
 	int allbuttonchecksum = 0; // enable/disable clear button depending if buttons have been cleared
-	for(int buttonindex = 0; buttonindex < 16; buttonindex++) // add button sum to allbuttonchecksum (used to check if clear button should be enabled)
+	for(int buttonindex = 0; buttonindex < TOTALBUTTONS; buttonindex++) // add button sum to allbuttonchecksum (used to check if clear button should be enabled)
 	{
 		allbuttonchecksum += PROFILE[currentplayer].BUTTONPRIM[buttonindex];
 		allbuttonchecksum += PROFILE[currentplayer].BUTTONSEC[buttonindex];
@@ -589,15 +594,15 @@ static void GUI_DetectDevice(const HWND hW, const int buttonid)
 		else
 			DEV_ReturnDeviceID(KEYBOARDTYPE); // flush keyboard input
 		if(tick == 10)
-			SetDlgItemText(hW, buttonid, "..Click Mouse..5..");
+			SetDlgItemTextA(hW, buttonid, "..Click Mouse..5..");
 		else if(tick == 35)
-			SetDlgItemText(hW, buttonid, "..Click Mouse..4..");
+			SetDlgItemTextA(hW, buttonid, "..Click Mouse..4..");
 		else if(tick == 60)
-			SetDlgItemText(hW, buttonid, "..Click Mouse..3..");
+			SetDlgItemTextA(hW, buttonid, "..Click Mouse..3..");
 		else if(tick == 85)
-			SetDlgItemText(hW, buttonid, "..Click Mouse..2..");
+			SetDlgItemTextA(hW, buttonid, "..Click Mouse..2..");
 		else if(tick == 110)
-			SetDlgItemText(hW, buttonid, "..Click Mouse..1..");
+			SetDlgItemTextA(hW, buttonid, "..Click Mouse..1..");
 		else if(tick == 135) // didn't detect mouse
 			break;
 	}
@@ -611,19 +616,19 @@ static void GUI_DetectDevice(const HWND hW, const int buttonid)
 		else
 			DEV_ReturnDeviceID(MOUSETYPE); // flush mouse input
 		if(tick == 10)
-			SetDlgItemText(hW, buttonid, "..Press Any Key..5.."); // we're assuming the user knows where the any key is...
+			SetDlgItemTextA(hW, buttonid, "..Press Any Key..5.."); // we're assuming the user knows where the any key is...
 		else if(tick == 35)
-			SetDlgItemText(hW, buttonid, "..Press Any Key..4..");
+			SetDlgItemTextA(hW, buttonid, "..Press Any Key..4..");
 		else if(tick == 60)
-			SetDlgItemText(hW, buttonid, "..Press Any Key..3..");
+			SetDlgItemTextA(hW, buttonid, "..Press Any Key..3..");
 		else if(tick == 85)
-			SetDlgItemText(hW, buttonid, "..Press Any Key..2..");
+			SetDlgItemTextA(hW, buttonid, "..Press Any Key..2..");
 		else if(tick == 110)
-			SetDlgItemText(hW, buttonid, "..Press Any Key..1..");
+			SetDlgItemTextA(hW, buttonid, "..Press Any Key..1..");
 		else if(tick == 135) // didn't detect keyboard
 			break;
 	}
-	SetDlgItemText(hW, buttonid, "Detect Input Devices");
+	SetDlgItemTextA(hW, buttonid, "Detect Input Devices");
 	EnableWindow(GetDlgItem(hW, buttonid), 1); // enable detect devices button
 	EnableWindow(GetDlgItem(hW, IDC_REVERT), 1); // set revert button status to true
 	if(kb == -1 && ms == -1)
@@ -641,10 +646,10 @@ static void GUI_DetectDevice(const HWND hW, const int buttonid)
 //==========================================================================
 static void INI_Load(const HWND hW, const int loadplayer)
 {
-	#define PRIMBTNBLKSIZE 4 * 16 // 4 PLAYERS * BUTTONPRIM
-	#define BUTTONBLKSIZE 4 * (16 + 16) // 4 PLAYERS * (BUTTONPRIM + BUTTONSEC)
-	#define SETTINGBLKSIZE 4 * 10 // 4 PLAYERS * SETTINGS
-	#define TOTALLINES BUTTONBLKSIZE + SETTINGBLKSIZE + 7 // profile struct[all players] + overridefov + overrideratiowidth + overrideratioheight + geshowcrosshair + mouselockonfocus + mouseunlockonloss + mousetogglekey
+	#define PRIMBTNBLKSIZE (4 * TOTALBUTTONS) // 4 PLAYERS * BUTTONPRIM
+	#define BUTTONBLKSIZE (4 * (TOTALBUTTONS + TOTALBUTTONS)) // 4 PLAYERS * (BUTTONPRIM + BUTTONSEC)
+	#define SETTINGBLKSIZE (4 * TOTALSETTINGS) // 4 PLAYERS * SETTINGS
+	#define TOTALLINES (BUTTONBLKSIZE + SETTINGBLKSIZE + 7) // profile struct[all players] + overridefov + overrideratiowidth + overrideratioheight + geshowcrosshair + mouselockonfocus + mouseunlockonloss + mousetogglekey
 	FILE *fileptr; // file pointer for mouseinjector.ini
 	if((fileptr = fopen(inifilepathdefault, "r")) == NULL) // if INI file was not found
 		fileptr = _wfopen(inifilepath, L"r"); // reattempt to load INI file using wide character filepath
@@ -661,16 +666,16 @@ static void INI_Load(const HWND hW, const int loadplayer)
 		fclose(fileptr); // close the file stream
 		if(counter == TOTALLINES) // check mouseinjector.ini if it has the correct new lines
 		{
-			const int safesettings[2][10] = {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, {3, 100, 5, 18, 1, 1, 1, 1, 16, 16}}; // safe min/max values
+			const int safesettings[2][TOTALSETTINGS] = {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, {3, 100, 5, 18, 1, 1, 1, 1, 16, 16}}; // safe min/max values
 			int everythingisfine = 1; // for now...
 			for(int player = PLAYER1; player < ALLPLAYERS; player++) // load settings block first because if using WASD/ESDF config don't bother loading custom keys (settings are stored at end of file)
 			{
-				for(int index = 0; index < 10; index++)
+				for(int index = 0; index < TOTALSETTINGS; index++)
 				{
-					if(everythingisfine && atoi(line[BUTTONBLKSIZE + (player * 10) + index]) >= safesettings[0][index] && atoi(line[BUTTONBLKSIZE + (player * 10) + index]) <= safesettings[1][index]) // if everything is fine
+					if(everythingisfine && atoi(line[BUTTONBLKSIZE + (player * TOTALSETTINGS) + index]) >= safesettings[0][index] && atoi(line[BUTTONBLKSIZE + (player * TOTALSETTINGS) + index]) <= safesettings[1][index]) // if everything is fine
 					{
 						if(loadplayer == ALLPLAYERS || player == loadplayer) // load everything if given ALLPLAYERS flag or filter loading to current player
-							PROFILE[player].SETTINGS[index] = atoi(line[BUTTONBLKSIZE + (player * 10) + index]);
+							PROFILE[player].SETTINGS[index] = atoi(line[BUTTONBLKSIZE + (player * TOTALSETTINGS) + index]);
 					}
 					else // invalid settings, abort (this isn't fine)
 						everythingisfine = 0;
@@ -696,10 +701,10 @@ static void INI_Load(const HWND hW, const int loadplayer)
 					{
 						if(PROFILE[player].SETTINGS[CONFIG] == DISABLED || PROFILE[player].SETTINGS[CONFIG] == CUSTOM) // only load keys if profile is disabled/custom, else skip
 						{
-							for(int button = 0; button < 16; button++)
+							for(int button = 0; button < TOTALBUTTONS; button++)
 							{
-								PROFILE[player].BUTTONPRIM[button] = ClampInt(atoi(line[player * 16 + button]), 0x00, 0xFF);
-								PROFILE[player].BUTTONSEC[button] = ClampInt(atoi(line[PRIMBTNBLKSIZE + (player * 16) + button]), 0x00, 0xFF);
+								PROFILE[player].BUTTONPRIM[button] = ClampInt(atoi(line[player * TOTALBUTTONS + button]), 0x00, 0xFF);
+								PROFILE[player].BUTTONSEC[button] = ClampInt(atoi(line[PRIMBTNBLKSIZE + (player * TOTALBUTTONS) + button]), 0x00, 0xFF);
 								if(PROFILE[player].BUTTONPRIM[button] == VK_ESCAPE || PROFILE[player].BUTTONPRIM[button] == 0xFF) // set to none if escape/0xFF (escape can't be used for keys)
 									PROFILE[player].BUTTONPRIM[button] = 0;
 								if(PROFILE[player].BUTTONSEC[button] == VK_ESCAPE || PROFILE[player].BUTTONSEC[button] == 0xFF)
@@ -717,10 +722,10 @@ static void INI_Load(const HWND hW, const int loadplayer)
 				return; // we're done
 			}
 		}
-		MessageBox(hW, "Loading mouseinjector.ini failed!\n\nInvalid settings detected, resetting to default...", "Mouse Injector - Error", MB_ICONERROR | MB_OK); // tell the user loading mouseinjector.ini failed
+		MessageBoxA(hW, "Loading mouseinjector.ini failed!\n\nInvalid settings detected, resetting to default...", "Mouse Injector - Error", MB_ICONERROR | MB_OK); // tell the user loading mouseinjector.ini failed
 	}
 	else
-		MessageBox(hW, "Loading mouseinjector.ini failed!\n\nCould not find mouseinjector.ini file, creating mouseinjector.ini...", "Mouse Injector - Error", MB_ICONERROR | MB_OK); // tell the user loading mouseinjector.ini failed
+		MessageBoxA(hW, "Loading mouseinjector.ini failed!\n\nCould not find mouseinjector.ini file, creating mouseinjector.ini...", "Mouse Injector - Error", MB_ICONERROR | MB_OK); // tell the user loading mouseinjector.ini failed
 	INI_Reset(ALLPLAYERS);
 	INI_SetConfig(PLAYER1, WASD);
 	INI_Save(hW); // create/overwrite mouseinjector.ini with default values
@@ -736,19 +741,19 @@ static void INI_Save(const HWND hW)
 	if(fileptr != NULL) // if INI file was found
 	{
 		for(int player = PLAYER1; player < ALLPLAYERS; player++)
-			for(int button = 0; button < 16; button++)
+			for(int button = 0; button < TOTALBUTTONS; button++)
 				fprintf(fileptr, "%d\n", ClampInt(PROFILE[player].BUTTONPRIM[button], 0x00, 0xFF)); // sanitize save
 		for(int player = PLAYER1; player < ALLPLAYERS; player++)
-			for(int button = 0; button < 16; button++)
+			for(int button = 0; button < TOTALBUTTONS; button++)
 				fprintf(fileptr, "%d\n", ClampInt(PROFILE[player].BUTTONSEC[button], 0x00, 0xFF));
 		for(int player = PLAYER1; player < ALLPLAYERS; player++)
-			for(int index = 0; index < 10; index++)
+			for(int index = 0; index < TOTALSETTINGS; index++)
 				fprintf(fileptr, "%d\n", ClampInt(PROFILE[player].SETTINGS[index], 0, 100));
 		fprintf(fileptr, "%d\n%d\n%d\n%d\n%d\n%d\n%d", overridefov, overrideratiowidth, overrideratioheight, geshowcrosshair, mouselockonfocus, mouseunlockonloss, mousetogglekey);
 		fclose(fileptr); // close the file stream
 	}
 	else // if saving file failed (could be set to read only, antivirus is preventing file writing or filepath is invalid)
-		MessageBox(hW, "Saving mouseinjector.ini failed!\n\nCould not write mouseinjector.ini file...", "Mouse Injector - Error", MB_ICONERROR | MB_OK); // tell the user saving mouseinjector.ini failed
+		MessageBoxA(hW, "Saving mouseinjector.ini failed!\n\nCould not write mouseinjector.ini file...", "Mouse Injector - Error", MB_ICONERROR | MB_OK); // tell the user saving mouseinjector.ini failed
 }
 //==========================================================================
 // Purpose: reset a player struct or all players
@@ -756,24 +761,26 @@ static void INI_Save(const HWND hW)
 //==========================================================================
 static void INI_Reset(const int playerflag)
 {
-	const int defaultsetting[10] = {DISABLED, 20, 0, 3, 0, 0, 1, 1, defaultmouse, defaultkeyboard};
+	const int defaultsetting[TOTALSETTINGS] = {DISABLED, 20, 0, 3, 0, 0, 1, 1, 0, 0};
 	if(playerflag == ALLPLAYERS)
 	{
 		for(int player = PLAYER1; player < ALLPLAYERS; player++)
 		{
-			for(int buttons = 0; buttons < 16; buttons++)
+			for(int buttons = 0; buttons < TOTALBUTTONS; buttons++)
 			{
 				PROFILE[player].BUTTONPRIM[buttons] = 0;
 				PROFILE[player].BUTTONSEC[buttons] = 0;
 			}
-			for(int index = 0; index < 10; index++)
+			for(int index = 0; index < TOTALSETTINGS; index++)
 				PROFILE[player].SETTINGS[index] = defaultsetting[index];
+			PROFILE[player].SETTINGS[MOUSE] = defaultmouse;
+			PROFILE[player].SETTINGS[KEYBOARD] = defaultkeyboard;
 		}
 		overridefov = 60, overrideratiowidth = 16, overrideratioheight = 9, geshowcrosshair = 0, mouselockonfocus = 0, mouseunlockonloss = 1, mousetogglekey = 0x34;
 	}
 	else
 	{
-		for(int buttons = 0; buttons < 16; buttons++)
+		for(int buttons = 0; buttons < TOTALBUTTONS; buttons++)
 		{
 			PROFILE[playerflag].BUTTONPRIM[buttons] = 0;
 			PROFILE[playerflag].BUTTONSEC[buttons] = 0;
@@ -789,8 +796,8 @@ static void INI_Reset(const int playerflag)
 //==========================================================================
 static void INI_SetConfig(const int playerflag, const int config)
 {
-	const int defaultbuttons[2][16] = {{87, 83, 65, 68, 1, 2, 81, 69, 13, 17, 10, 11, 38, 40, 37, 39}, {69, 68, 83, 70, 1, 2, 87, 82, 13, 65, 10, 11, 38, 40, 37, 39}}; // WASD/ESDF
-	for(int buttons = 0; buttons < 16; buttons++)
+	const int defaultbuttons[2][TOTALBUTTONS] = {{87, 83, 65, 68, 1, 2, 81, 69, 13, 17, 0, 10, 11, 38, 40, 37, 39}, {69, 68, 83, 70, 1, 2, 87, 82, 13, 65, 0, 10, 11, 38, 40, 37, 39}}; // WASD/ESDF
+	for(int buttons = 0; buttons < TOTALBUTTONS; buttons++)
 	{
 		PROFILE[playerflag].BUTTONPRIM[buttons] = defaultbuttons[config - 1][buttons];
 		PROFILE[playerflag].BUTTONSEC[buttons] = 0;
@@ -838,25 +845,25 @@ DLLEXPORT void CALL ControllerCommand(int Control, BYTE *Command)
 //==========================================================================
 DLLEXPORT void CALL DllAbout(HWND hParent)
 {
-	MessageBox(hParent, "Mouse Injector for GE/PD "__MOUSE_INECTOR_VERSION__" (Build: "__DATE__")\nCopyright (C) "__CURRENTYEAR__", Carnivorous", "Mouse Injector - About", MB_ICONINFORMATION | MB_OK);
+	MessageBoxA(hParent, "Mouse Injector for GE/PD "__MOUSE_INECTOR_VERSION__" (Build: "__DATE__")\nCopyright (C) "__CURRENTYEAR__", Carnivorous", "Mouse Injector - About", MB_ICONINFORMATION | MB_OK);
 }
 //==========================================================================
 // Purpose: Optional function that is provided to allow the user to configure the DLL
 // Input: A handle to the window that calls this function
-// Changed Globals: currentlyconfiguring, mousetoggle, lastinputbutton, guibusy, windowactive
+// Changed Globals: configdialogopen, mousetoggle, lastinputbutton, guibusy, windowactive
 //==========================================================================
 DLLEXPORT void CALL DllConfig(HWND hParent)
 {
 	if(Init(hParent))
 	{
 		int laststate = mousetoggle;
-		currentlyconfiguring = 1, mousetoggle = 0, lastinputbutton = 0, guibusy = 1;
+		configdialogopen = 1, mousetoggle = 0, lastinputbutton = 0, guibusy = 1;
 		DialogBox(hInst, MAKEINTRESOURCE(IDC_CONFIGWINDOW), hParent, (DLGPROC)GUI_Config);
 		UpdateControllerStatus();
-		currentlyconfiguring = 0, mousetoggle = laststate, windowactive = 1, guibusy = 1;
+		configdialogopen = 0, mousetoggle = laststate, windowactive = 1, guibusy = 1;
 	}
 	else
-		MessageBox(hParent, "Mouse Injector could not find Mouse and Keyboard\n\nPlease connect devices and restart Emulator..." , "Mouse Injector - Error", MB_ICONERROR | MB_OK);
+		MessageBoxA(hParent, "Mouse Injector could not find Mouse and Keyboard\n\nPlease connect devices and restart Emulator..." , "Mouse Injector - Error", MB_ICONERROR | MB_OK);
 }
 //==========================================================================
 // Purpose: Optional function that is provided to allow the user to test the DLL
@@ -864,7 +871,7 @@ DLLEXPORT void CALL DllConfig(HWND hParent)
 //==========================================================================
 DLLEXPORT void CALL DllTest(HWND hParent)
 {
-	MessageBox(hParent, DEV_Init() ? "Mouse Injector detects Mouse and Keyboard" : "Mouse Injector could not find Mouse and Keyboard", "Mouse Injector - Testing", MB_ICONINFORMATION | MB_OK);
+	MessageBoxA(hParent, DEV_Init() ? "Mouse Injector detects Mouse and Keyboard" : "Mouse Injector could not find Mouse and Keyboard", "Mouse Injector - Testing", MB_ICONINFORMATION | MB_OK);
 }
 //==========================================================================
 // Purpose: Allows the emulator to gather information about the DLL by filling in the PluginInfo structure
@@ -887,7 +894,7 @@ DLLEXPORT void CALL GetKeys(int Control, BUTTONS *Keys)
 {
 	if(Keys == NULL)
 		return;
-	Keys->Value = !currentlyconfiguring ? CONTROLLER[Control].Value : 0; // only send input if user is not currently configuring plugin
+	Keys->Value = !configdialogopen ? CONTROLLER[Control].Value : 0; // ignore input if config dialog is open
 }
 //==========================================================================
 // Purpose: Initializes how each of the controllers should be handled
@@ -903,7 +910,7 @@ DLLEXPORT void CALL InitiateControllers(HWND hMainWindow, CONTROL Controls[4])
 		for(int player = PLAYER1; player < ALLPLAYERS; player++)
 			PROFILE[player].SETTINGS[CONFIG] = DISABLED;
 		UpdateControllerStatus(); // set controls to disabled
-		MessageBox(hMainWindow, "Mouse Injector could not find Mouse and Keyboard\n\nPlease connect devices and restart Emulator..." , "Mouse Injector - Error", MB_ICONERROR | MB_OK);
+		MessageBoxA(hMainWindow, "Mouse Injector could not find Mouse and Keyboard\n\nPlease connect devices and restart Emulator..." , "Mouse Injector - Error", MB_ICONERROR | MB_OK);
 	}
 }
 //==========================================================================
