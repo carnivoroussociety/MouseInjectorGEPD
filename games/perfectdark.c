@@ -33,7 +33,7 @@
 #define BIKESPEEDLIMIT 0.5 // 0x3F000000
 #define PI 3.1415927 // 0x40490FDB
 // PERFECT DARK ADDRESSES - OFFSET ADDRESSES BELOW (REQUIRES PLAYERBASE/BIKEBASE TO USE)
-#define PD_crouchflag 0x801BB74C - 0x801BB6A0
+#define PD_stanceflag 0x801BB74C - 0x801BB6A0
 #define PD_deathflag 0x801BB778 - 0x801BB6A0
 #define PD_camx 0x801BB7E4 - 0x801BB6A0
 #define PD_camy 0x801BB7F4 - 0x801BB6A0
@@ -76,12 +76,12 @@
 #define PD_radialmenutimer 0x802EA2BC // time instruction for radial menu to appear (15 ticks)
 #define PD_radialmenualphainit 0x803D2CDC // initial alpha value for all menus
 
-static unsigned int playerbase[4] = {0, 0, 0, 0}; // current player's joannadata address
-static unsigned int bikebase[4][2] = {{0, 0}, {0, 0}, {0, 0}, {0, 0}}; // hoverbike's address and player's last grab state (used to find the exact moment when the player hops on a bike)
-static int xstick[4] = {0, 0, 0, 0}, ystick[4] = {0, 0, 0, 0}, usingstick[4] = {0, 0, 0, 0}; // for camspy/slayer controls
-static float xmenu[4] = {0, 0, 0, 0}, ymenu[4] = {0, 0, 0, 0}; // for pd radial nav function
-static int radialmenudirection[4][4] = {{0, 0, 0, 0}, {0, 0, 0, 0}}; // used to override c buttons if user is interacting with a radial menu
-static int safetoduck[4] = {1, 1, 1, 1}, safetostand[4] = {0, 0, 0, 0}, crouchstance[4] = {0, 0, 0, 0}; // used for crouch toggle changes (limits tick-tocking)
+static unsigned int playerbase[4] = {0}; // current player's joannadata address
+static unsigned int bikebase[4][2] = {{0}, {0}, {0}, {0}}; // hoverbike's address and player's last grab state (used to find the exact moment when the player hops on a bike)
+static int xstick[4] = {0}, ystick[4] = {0}, usingstick[4] = {0}; // for camspy/slayer controls
+static float xmenu[4] = {0}, ymenu[4] = {0}; // for pd radial nav function
+static int radialmenudirection[4][4] = {{0}, {0}, {0}, {0}}; // used to override c buttons if user is interacting with a radial menu
+static int safetocrouch[4] = {1}, safetostand[4] = {0}, crouchstance[4] = {2}; // used for crouch toggle (limits tick-tocking)
 static float crosshairposx[4], crosshairposy[4], aimx[4], aimy[4];
 static int gunrcenter[4], gunlcenter[4];
 
@@ -89,7 +89,7 @@ static int PD_Status(void);
 static void PD_DetectMap(void);
 static void PD_Inject(void);
 static void PD_Crouch(const int player);
-#define PD_ResetCrouchToggle(X) safetoduck[X] = 1, safetostand[X] = 0, crouchstance[X] = 0 // reset crouch toggle bind
+#define PD_ResetCrouchToggle(X) safetocrouch[X] = 1, safetostand[X] = 0, crouchstance[X] = 2 // reset crouch toggle bind
 #define PD_ResetXYStick(X) xstick[X] = 0, ystick[X] = 0, usingstick[X] = 0 // reset x/y stick array
 #define PD_ResetRadialMenuBtns(X) for(int direction = 0; direction < 4; direction++) radialmenudirection[X][direction] = 0 // reset direction buttons
 static void PD_AimMode(const int player, const int aimingflag, const float fov, const float basefov);
@@ -121,7 +121,7 @@ static int PD_Status(void)
 }
 //==========================================================================
 // Purpose: searches for the current map memory locations
-// Changes Globals: playerbase, safetoduck, safetostand, crouchstance, xmenu, ymenu, bikebase
+// Changes Globals: playerbase, safetocrouch, safetostand, crouchstance, xmenu, ymenu, bikebase
 //==========================================================================
 static void PD_DetectMap(void)
 {
@@ -164,7 +164,7 @@ static void PD_DetectMap(void)
 }
 //==========================================================================
 // Purpose: calculate mouse movement and inject into current game
-// Changes Globals: safetoduck, safetostand, crouchstance
+// Changes Globals: safetocrouch, safetostand, crouchstance
 //==========================================================================
 static void PD_Inject(void)
 {
@@ -277,28 +277,37 @@ static void PD_Inject(void)
 	PD_Controller(); // set controller data
 }
 //==========================================================================
-// Purpose: crouching function for Perfect Dark (2 = stand, 0 = duck)
-// Changes Globals: safetoduck, crouchstance, safetostand
+// Purpose: crouching function for Perfect Dark (2 = stand, 1 = kneel, 0 = duck)
+// Changes Globals: safetocrouch, crouchstance, safetostand
 //==========================================================================
 static void PD_Crouch(const int player)
 {
 	int crouchheld = DEVICE[player].BUTTONPRIM[CROUCH] || DEVICE[player].BUTTONSEC[CROUCH];
-	if(PROFILE[player].SETTINGS[CROUCHTOGGLE]) // check and change player stance
+	int kneelheld = DEVICE[player].BUTTONPRIM[KNEEL] || DEVICE[player].BUTTONSEC[KNEEL];
+	int stance = 2; // standing by default
+	if(crouchheld)
+		stance = 0;
+	else if(kneelheld)
+		stance = 1;
+	if(PROFILE[player].SETTINGS[CROUCHTOGGLE]) // check and toggle player stance
 	{
-		if(safetoduck[player] && crouchheld) // standing to ducking
-			safetoduck[player] = 0, crouchstance[player] = 1;
-		if(!safetoduck[player] && !crouchheld) // crouch is no longer being held, ready to stand
+		const int crouchkneelheld = crouchheld || kneelheld; // holding down crouch/kneel
+		if(safetocrouch[player] && crouchkneelheld) // stand to crouch/kneel
+			safetocrouch[player] = 0, crouchstance[player] = crouchheld ? 0 : 1;
+		else if(!safetocrouch[player] && !crouchkneelheld) // crouch/kneel is no longer being held, ready to stand
 			safetostand[player] = 1;
-		if(safetostand[player] && crouchheld) // standing up
-			safetoduck[player] = 1, crouchstance[player] = 0;
-		if(safetostand[player] && safetoduck[player] && !crouchheld) // crouch key not active, ready to change toggle
+		if(safetostand[player] && crouchkneelheld) // toggle to other stance
+		{
+			if(crouchheld && crouchstance[player] == 0 || kneelheld && crouchstance[player] == 1) // if pressed crouch/kneel twice, stand up
+				safetocrouch[player] = 1, crouchstance[player] = 2;
+			else
+				safetostand[player] = 0, crouchstance[player] = crouchheld ? 0 : 1; // switch to the other crouch stance (kneel/crouch)
+		}
+		else if(safetostand[player] && safetocrouch[player] && !crouchkneelheld) // crouch/kneel key not active, ready to toggle
 			safetostand[player] = 0;
-		crouchheld = crouchstance[player];
+		stance = crouchstance[player];
 	}
-	if(crouchheld) // user is holding down the crouch button
-		EMU_WriteInt(playerbase[player] + PD_crouchflag, 0); // set in-game crouch flag to lowest point
-	else // player isn't holding down crouch
-		EMU_WriteInt(playerbase[player] + PD_crouchflag, 2); // force standing flag value (the side effect to this brute force method is it causes a speed glitch while crawling in tunnels)
+	EMU_WriteInt(playerbase[player] + PD_stanceflag, stance); // set in-game stance
 }
 //==========================================================================
 // Purpose: replicate the original aiming system, uses aimx/y to move screen when crosshair is on border of screen
@@ -506,7 +515,7 @@ static void PD_InjectHacks(void)
 }
 //==========================================================================
 // Purpose: run when emulator closes rom
-// Changes Globals: playerbase, bikebase, safetoduck, safetostand, crouchstance, xmenu, ymenu
+// Changes Globals: playerbase, bikebase, safetocrouch, safetostand, crouchstance, xmenu, ymenu
 //==========================================================================
 static void PD_Quit(void)
 {

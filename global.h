@@ -17,7 +17,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, visit http://www.gnu.org/licenses/gpl-2.0.html
 //==========================================================================
-#define __MOUSE_INECTOR_VERSION__ "V2.1"
+#define __MOUSE_INECTOR_VERSION__ "V2.2"
 #define __CURRENTYEAR__ "2020"
 #define CONSOLE { AllocConsole(); AttachConsole(GetCurrentProcessId()); freopen("CON", "w", stdout); }
 #define ONLY1PLAYERACTIVE \
@@ -44,28 +44,28 @@ inline int ClampInt(const int value, const int min, const int max)
 }
 
 // profile struct
-enum CONTROLLERENUM {FORWARDS = 0, BACKWARDS, STRAFELEFT, STRAFERIGHT, FIRE, AIM, ACCEPT, CANCEL, START, CROUCH, PREVIOUSWEAPON, NEXTWEAPON, UP, DOWN, LEFT, RIGHT};
-enum CONFIGENUM {CONFIG = 0, SENSITIVITY, ACCELERATION, CROSSHAIR, INVERTPITCH, CROUCHTOGGLE, GEAIMMODE, PDAIMMODE, MOUSE, KEYBOARD};
+enum CONTROLLERENUM {FORWARDS = 0, BACKWARDS, STRAFELEFT, STRAFERIGHT, FIRE, AIM, ACCEPT, CANCEL, START, CROUCH, KNEEL, PREVIOUSWEAPON, NEXTWEAPON, UP, DOWN, LEFT, RIGHT, TOTALBUTTONS};
+enum CONFIGENUM {CONFIG = 0, SENSITIVITY, ACCELERATION, CROSSHAIR, INVERTPITCH, CROUCHTOGGLE, GEAIMMODE, PDAIMMODE, MOUSE, KEYBOARD, TOTALSETTINGS};
 enum QUICKCONFIGENUM {DISABLED = 0, WASD, ESDF, CUSTOM};
 enum PLAYERSENUM {PLAYER1 = 0, PLAYER2, PLAYER3, PLAYER4, ALLPLAYERS};
 enum DEVICETYPE {MOUSETYPE = 0, KEYBOARDTYPE};
 
 struct
 {
-	int BUTTONPRIM[16];
-	int BUTTONSEC[16];
-	int SETTINGS[10];
-} PROFILE[4];
+	int BUTTONPRIM[TOTALBUTTONS];
+	int BUTTONSEC[TOTALBUTTONS];
+	int SETTINGS[TOTALSETTINGS];
+} PROFILE[ALLPLAYERS];
 
 // device struct (used for all game input)
 struct
 {
 	int XPOS, YPOS; // mouse input
 	int WHEEL; // mouse wheel buffer cool down
-	int BUTTONPRIM[16]; // button values for primary set (0-1)
-	int BUTTONSEC[16]; // button values for secondary set (0-1)
+	int BUTTONPRIM[TOTALBUTTONS]; // button values for primary set (0-1)
+	int BUTTONSEC[TOTALBUTTONS]; // button values for secondary set (0-1)
 	int ARROW[4]; // arrow information
-} DEVICE[4];
+} DEVICE[ALLPLAYERS];
 
 // plugin spec
 #define PLUGIN_TYPE_CONTROLLER 4
