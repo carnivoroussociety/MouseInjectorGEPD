@@ -646,9 +646,9 @@ static void GUI_DetectDevice(const HWND hW, const int buttonid)
 //==========================================================================
 static void INI_Load(const HWND hW, const int loadplayer)
 {
-	#define PRIMBTNBLKSIZE (4 * TOTALBUTTONS) // 4 PLAYERS * BUTTONPRIM
-	#define BUTTONBLKSIZE (4 * (TOTALBUTTONS + TOTALBUTTONS)) // 4 PLAYERS * (BUTTONPRIM + BUTTONSEC)
-	#define SETTINGBLKSIZE (4 * TOTALSETTINGS) // 4 PLAYERS * SETTINGS
+	#define PRIMBTNBLKSIZE (ALLPLAYERS * TOTALBUTTONS) // 4 PLAYERS * BUTTONPRIM
+	#define BUTTONBLKSIZE (ALLPLAYERS * (TOTALBUTTONS + TOTALBUTTONS)) // 4 PLAYERS * (BUTTONPRIM + BUTTONSEC)
+	#define SETTINGBLKSIZE (ALLPLAYERS * TOTALSETTINGS) // 4 PLAYERS * SETTINGS
 	#define TOTALLINES (BUTTONBLKSIZE + SETTINGBLKSIZE + 7) // profile struct[all players] + overridefov + overrideratiowidth + overrideratioheight + geshowcrosshair + mouselockonfocus + mouseunlockonloss + mousetogglekey
 	FILE *fileptr; // file pointer for mouseinjector.ini
 	if((fileptr = fopen(inifilepathdefault, "r")) == NULL) // if INI file was not found
