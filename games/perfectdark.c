@@ -475,7 +475,7 @@ static void PD_InjectHacks(void)
 		EMU_WriteInt(PD_reversepitch, 0x34020001); // always force game to use upright pitch
 	if((unsigned int)EMU_ReadInt(PD_pickupyaxisthreshold) == 0xBF4907A9) // if safe to overwrite
 		EMU_WriteFloat(PD_pickupyaxisthreshold, -60.f * PI / 180.f); // overwrite default y axis limit for picking up items (from -45 to -60)
-	if((unsigned int)EMU_ReadInt(PD_radialmenutimer) == 0x28410010 && emuoverclock) // make radial menu trigger 2x tr (from 15 to 8 ticks)
+	if((unsigned int)EMU_ReadInt(PD_radialmenutimer) == 0x28410010 && emuoverclock) // make radial menu trigger quicker (from 15 to 8 ticks)
 		EMU_WriteInt(PD_radialmenutimer, 0x28410009);
 	if((unsigned int)EMU_ReadInt(PD_radialmenualphainit) == 0x3E99999A) // make radial menus initialize with 75% alpha
 		EMU_WriteFloat(PD_radialmenualphainit, 0.75f);
