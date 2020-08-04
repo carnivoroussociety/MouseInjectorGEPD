@@ -17,7 +17,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, visit http://www.gnu.org/licenses/gpl-2.0.html
 //==========================================================================
-#define __MOUSE_INECTOR_VERSION__ "V2.2"
+#define __MOUSE_INJECTOR_VERSION__ "V2.2"
 #define __CURRENTYEAR__ "2020"
 #define CONSOLE { AllocConsole(); AttachConsole(GetCurrentProcessId()); freopen("CON", "w", stdout); }
 #define ONLY1PLAYERACTIVE \

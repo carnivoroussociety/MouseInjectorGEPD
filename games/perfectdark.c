@@ -171,15 +171,15 @@ static void PD_Inject(void)
 	PD_DetectMap();
 	if(!playerbase[PLAYER1]) // hacks can only be injected at boot sequence before code blocks are cached, so inject until player has spawned
 		PD_InjectHacks();
+	const int camera = EMU_ReadInt(PD_camera);
+	const int pause = EMU_ReadInt(PD_pause);
+	const int mppause = (EMU_ReadShort(PD_mppause) & 0xFF00);
 	for(int player = PLAYER1; player < ALLPLAYERS; player++)
 	{
 		if(PROFILE[player].SETTINGS[CONFIG] == DISABLED) // bypass disabled players
 			continue;
-		const int camera = EMU_ReadInt(PD_camera);
 		const int dead = EMU_ReadInt(playerbase[player] + PD_deathflag);
 		const int menu = EMU_ReadInt(PD_menu(player));
-		const int pause = EMU_ReadInt(PD_pause);
-		const int mppause = (EMU_ReadShort(PD_mppause) & 0xFF00);
 		const int aimingflag = EMU_ReadInt(playerbase[player] + PD_aimingflag);
 		const int grabflag = EMU_ReadInt(playerbase[player] + PD_grabflag);
 		const int thirdperson = EMU_ReadInt(playerbase[player] + PD_thirdperson);

@@ -21,7 +21,7 @@
 #define LOAD_SWORD_PARAM(param) *(int *)((unsigned char *)rdramptr[(((param) >> 12))] + (((param) & 0x00000FFF)))
 #define LOAD_UWORD_PARAM(param) *(unsigned int *)((unsigned char *)rdramptr[(((param) >> 12))] + (((param) & 0x00000FFF)))
 
-#define WITHINRANGE rdramptr != 0 && addr / 0x1000000 == 0x80
+#define WITHINRANGE(param) ((rdramptr != 0) && ((param & 0xFF800000U) == 0x80000000U))
 #define GARBAGESHORT (short)0xABAD
 #define GARBAGEINT (int)0xABADC0DE
 
@@ -31,7 +31,9 @@
 //==========================================================================
 static inline short EMU_ReadShort(const unsigned int addr)
 {
-	return WITHINRANGE ? LOAD_SHALF_PARAM(addr) : GARBAGESHORT; // return garbage if request invalid location
+	if(WITHINRANGE(addr))
+		return LOAD_SHALF_PARAM(addr);
+	return GARBAGESHORT;
 }
 //==========================================================================
 // Purpose: write short to memory location
@@ -39,7 +41,7 @@ static inline short EMU_ReadShort(const unsigned int addr)
 //==========================================================================
 static inline void EMU_WriteShort(const unsigned int addr, const short value)
 {
-	if(WITHINRANGE)
+	if(WITHINRANGE(addr))
 		LOAD_SHALF_PARAM(addr) = value;
 }
 //==========================================================================
@@ -48,7 +50,9 @@ static inline void EMU_WriteShort(const unsigned int addr, const short value)
 //==========================================================================
 static inline int EMU_ReadInt(const unsigned int addr)
 {
-	return WITHINRANGE ? LOAD_SWORD_PARAM(addr) : GARBAGEINT;
+	if(WITHINRANGE(addr))
+		return LOAD_SWORD_PARAM(addr);
+	return GARBAGEINT;
 }
 //==========================================================================
 // Purpose: write int to memory location
@@ -56,7 +60,7 @@ static inline int EMU_ReadInt(const unsigned int addr)
 //==========================================================================
 static inline void EMU_WriteInt(const unsigned int addr, const int value)
 {
-	if(WITHINRANGE)
+	if(WITHINRANGE(addr))
 		LOAD_SWORD_PARAM(addr) = value;
 }
 //==========================================================================
@@ -65,7 +69,9 @@ static inline void EMU_WriteInt(const unsigned int addr, const int value)
 //==========================================================================
 static inline float EMU_ReadFloat(const unsigned int addr)
 {
-	return WITHINRANGE ? *((float *)&LOAD_UWORD_PARAM(addr)) : GARBAGEINT;
+	if(WITHINRANGE(addr))
+		return *((float *)&LOAD_UWORD_PARAM(addr));
+	return GARBAGEINT;
 }
 //==========================================================================
 // Purpose: write float to memory location
@@ -73,7 +79,7 @@ static inline float EMU_ReadFloat(const unsigned int addr)
 //==========================================================================
 static inline void EMU_WriteFloat(const unsigned int addr, const float value)
 {
-	if(WITHINRANGE)
+	if(WITHINRANGE(addr))
 		LOAD_UWORD_PARAM(addr) = *(unsigned int *)(&value);
 }
 //==========================================================================

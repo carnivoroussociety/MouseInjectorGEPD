@@ -72,7 +72,6 @@ static int safetocrouch[4] = {1}, safetostand[4] = {0}, crouchstance[4] = {0}; /
 static float crosshairposx[4], crosshairposy[4], aimx[4], aimy[4];
 
 static int GE_Status(void);
-static void GE_DetectMap(void);
 static void GE_Inject(void);
 static void GE_Crouch(const int player);
 #define GE_ResetCrouchToggle(X) safetocrouch[X] = 1, safetostand[X] = 0, crouchstance[X] = 0 // reset crouch toggle bind
@@ -103,21 +102,6 @@ static int GE_Status(void)
 	return (ge_camera >= 0 && ge_camera <= 10 && ge_page >= -1 && ge_page <= 25 && ge_pause >= 0 && ge_pause <= 1 && ge_exit >= 0 && ge_exit <= 1 && ge_crosshairx >= 20 && ge_crosshairx <= 420 && ge_crosshairy >= 20 && ge_crosshairy <= 310); // if GoldenEye 007 is current game
 }
 //==========================================================================
-// Purpose: detect map change and update playerbase
-// Changes Globals: playerbase, safetocrouch, safetostand, crouchstance
-//==========================================================================
-static void GE_DetectMap(void)
-{
-	if(playerbase[PLAYER1] != BONDDATA(PLAYER1) && (EMU_ReadInt(GE_camera) == 1 || EMU_ReadInt(GE_camera) == 4 || EMU_ReadInt(GE_camera) == 9))
-	{
-		for(int player = PLAYER1; player < ALLPLAYERS; player++)
-		{
-			playerbase[player] = BONDDATA(player); // load player pointer
-			GE_ResetCrouchToggle(player); // reset crouch toggle on new map
-		}
-	}
-}
-//==========================================================================
 // Purpose: calculate mouse movement and inject into current game
 // Changes Globals: safetocrouch, safetostand, crouchstance
 // Q: Could you explain !aimingflag ? 10.0f : 40.0f
@@ -129,22 +113,22 @@ static void GE_DetectMap(void)
 //==========================================================================
 static void GE_Inject(void)
 {
-	GE_DetectMap();
 	if(EMU_ReadInt(GE_menupage) < 1) // hacks can only be injected at boot sequence before code blocks are cached, so inject until the main menu
 		GE_InjectHacks();
+	const int camera = EMU_ReadInt(GE_camera);
+	const int exit = EMU_ReadInt(GE_exit);
+	const int pause = EMU_ReadInt(GE_pause);
+	const int menupage = EMU_ReadInt(GE_menupage);
+	const int tankflag = EMU_ReadInt(GE_tankflag);
+	const int mproundend = EMU_ReadInt(GE_matchended);
 	for(int player = PLAYER1; player < ALLPLAYERS; player++)
 	{
 		if(PROFILE[player].SETTINGS[CONFIG] == DISABLED) // bypass disabled players
 			continue;
-		const int camera = EMU_ReadInt(GE_camera);
+		playerbase[player] = BONDDATA(player);
 		const int dead = EMU_ReadInt(playerbase[player] + GE_deathflag);
 		const int watch = EMU_ReadInt(playerbase[player] + GE_watch);
-		const int exit = EMU_ReadInt(GE_exit);
-		const int pause = EMU_ReadInt(GE_pause);
 		const int aimingflag = EMU_ReadInt(playerbase[player] + GE_aimingflag);
-		const int menupage = EMU_ReadInt(GE_menupage);
-		const int tankflag = EMU_ReadInt(GE_tankflag);
-		const int mproundend = EMU_ReadInt(GE_matchended);
 		const int mppausemenu = EMU_ReadInt(playerbase[player] + GE_multipausemenu);
 		const int cursoraimingflag = PROFILE[player].SETTINGS[GEAIMMODE] && aimingflag;
 		const float fov = EMU_ReadFloat(playerbase[player] + GE_fov);

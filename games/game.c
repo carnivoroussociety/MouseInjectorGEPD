@@ -42,8 +42,13 @@ void GAME_Quit(void);
 //==========================================================================
 int GAME_Status(void)
 {
+	if(CURRENT_GAME != NULL) // if any game has been detected previously
+	{
+		if(CURRENT_GAME->Status()) // check if game is still active, else check every supported driver
+			return 1;
+		CURRENT_GAME = NULL;
+	}
 	const GAMEDRIVER *THIS_GAME;
-	CURRENT_GAME = NULL;
 	for(int i = 0; (i < upper) && (CURRENT_GAME == NULL); i++)
 	{
 		THIS_GAME = *(GAMELIST[i]);

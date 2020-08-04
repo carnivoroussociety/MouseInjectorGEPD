@@ -603,7 +603,7 @@ static void GUI_DetectDevice(const HWND hW, const int buttonid)
 			SetDlgItemTextA(hW, buttonid, "..Click Mouse..2..");
 		else if(tick == 110)
 			SetDlgItemTextA(hW, buttonid, "..Click Mouse..1..");
-		else if(tick == 135) // didn't detect mouse
+		else if(tick >= 135) // didn't detect mouse
 			break;
 	}
 	tick = 0;
@@ -625,7 +625,7 @@ static void GUI_DetectDevice(const HWND hW, const int buttonid)
 			SetDlgItemTextA(hW, buttonid, "..Press Any Key..2..");
 		else if(tick == 110)
 			SetDlgItemTextA(hW, buttonid, "..Press Any Key..1..");
-		else if(tick == 135) // didn't detect keyboard
+		else if(tick >= 135) // didn't detect keyboard
 			break;
 	}
 	SetDlgItemTextA(hW, buttonid, "Detect Input Devices");
@@ -845,7 +845,7 @@ DLLEXPORT void CALL ControllerCommand(int Control, BYTE *Command)
 //==========================================================================
 DLLEXPORT void CALL DllAbout(HWND hParent)
 {
-	MessageBoxA(hParent, "Mouse Injector for GE/PD "__MOUSE_INECTOR_VERSION__" (Build: "__DATE__")\nCopyright (C) "__CURRENTYEAR__", Carnivorous", "Mouse Injector - About", MB_ICONINFORMATION | MB_OK);
+	MessageBoxA(hParent, "Mouse Injector for GE/PD "__MOUSE_INJECTOR_VERSION__" (Build: "__DATE__")\nCopyright (C) "__CURRENTYEAR__", Carnivorous", "Mouse Injector - About", MB_ICONINFORMATION | MB_OK);
 }
 //==========================================================================
 // Purpose: Optional function that is provided to allow the user to configure the DLL
@@ -881,7 +881,7 @@ DLLEXPORT void CALL GetDllInfo(PLUGIN_INFO *PluginInfo)
 {
 	PluginInfo->Version = 0xFBAD; // no emulator supports this other than my disgusting version of 1964 (awful hack that i created because plugins are not complicated enough and i don't know what the f**k i am doing as evident from the code i've written)
 	PluginInfo->Type = PLUGIN_TYPE_CONTROLLER;
-	sprintf(PluginInfo->Name, "Mouse Injector for GE/PD "__MOUSE_INECTOR_VERSION__"");
+	sprintf(PluginInfo->Name, "Mouse Injector for GE/PD "__MOUSE_INJECTOR_VERSION__"");
 #ifdef SPEEDRUN_BUILD
 	sprintf(PluginInfo->Name, "%s (Speedrun Build)", PluginInfo->Name);
 #endif
