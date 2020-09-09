@@ -220,6 +220,7 @@ DWORD WINAPI DEV_InjectThread()
 			GAME_Inject(); // send input to game driver
 		Sleep(emuoverclock ? 2 : 4); // 2ms (500 Hz) for overclocked, 4ms (250 Hz) for stock speed
 	}
+	GAME_Quit(); // reset game driver's global variables
 	return 0;
 }
 //==========================================================================

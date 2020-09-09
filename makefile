@@ -45,7 +45,7 @@ mouseinjector: $(OBJS)
 all: clean mouseinjector
 
 #Individual recipes
-$(OBJDIR)maindll.o: $(SRCDIR)maindll.c $(SRCDIR)global.h $(SRCDIR)maindll.h $(SRCDIR)device.h $(SRCDIR)discord.h $(GAMESDIR)game.h $(UIDIR)ui.rc $(UIDIR)resource.h $(SRCDIR)vkey.h
+$(OBJDIR)maindll.o: $(SRCDIR)maindll.c $(SRCDIR)global.h $(SRCDIR)maindll.h $(SRCDIR)device.h $(SRCDIR)discord.h $(UIDIR)ui.rc $(UIDIR)resource.h $(SRCDIR)vkey.h
 	$(CC) -c $(SRCDIR)maindll.c -o $(OBJDIR)maindll.o $(CFLAGS) $(WARNINGS) -Wno-unused-parameter
 
 $(OBJDIR)device.o: $(SRCDIR)device.c $(SRCDIR)global.h $(SRCDIR)device.h $(SRCDIR)maindll.h $(MANYMOUSEDIR)manymouse.h $(GAMESDIR)game.h

@@ -25,7 +25,6 @@
 #include "maindll.h"
 #include "device.h"
 #include "discord.h"
-#include "games/game.h"
 #include "./ui/resource.h"
 #include "vkey.h"
 
@@ -930,7 +929,6 @@ DLLEXPORT void CALL RomClosed(void)
 {
 	mousetoggle = 0;
 	StopInjection();
-	GAME_Quit();
 }
 //==========================================================================
 // Purpose: Called when a ROM is open (from the emulation thread)
