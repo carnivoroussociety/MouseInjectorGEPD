@@ -17,7 +17,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, visit http://www.gnu.org/licenses/gpl-2.0.html
 //==========================================================================
-#include <windows.h>
 #include <math.h>
 #include "../global.h"
 #include "../maindll.h"
@@ -169,7 +168,7 @@ static void PD_Inject(void)
 					camx -= 360;
 				EMU_WriteFloat(playerbase[player] + PD_camx, camx);
 			}
-			else if((bikebase & 0xFF800000U) == 0x80000000U) // if player is riding hoverbike (and hoverbike address is valid)
+			else if(WITHINRANGE(bikebase)) // if player is riding hoverbike (and hoverbike address is legal)
 			{
 				PD_ResetCrouchToggle(player);
 				float bikeyaw = EMU_ReadFloat(bikebase + PD_bikeyaw), bikeroll = EMU_ReadFloat(bikebase + PD_bikeroll);
