@@ -218,7 +218,7 @@ DWORD WINAPI DEV_InjectThread()
 			checkwindowtick++;
 		if(windowactive && GAME_Status() && !configdialogopen) // if emulator is focused, game is valid and config dialog isn't open
 			GAME_Inject(); // send input to game driver
-		Sleep(emuoverclock ? 2 : 4); // 2ms (500 Hz) for overclocked, 4ms (250 Hz) for stock speed
+		Sleep(TICKRATE); // 2ms (500 Hz) for overclocked, 4ms (250 Hz) for stock speed
 	}
 	GAME_Quit(); // reset game driver's global variables
 	return 0;

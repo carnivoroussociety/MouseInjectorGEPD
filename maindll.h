@@ -17,7 +17,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, visit http://www.gnu.org/licenses/gpl-2.0.html
 //==========================================================================
-#define TICKRATE (emuoverclock ? 2 : 4)
+#define TICKRATE (emuoverclock ? 2 : 4) // 2ms (500 Hz) for overclocked, 4ms (250 Hz) for stock speed
 #define TIMESTEP TICKRATE / 1000
 #ifdef SPEEDRUN_BUILD // fov/ratio hacks gives unfair advantage, always use default values for speedrun build
 #define RATIOFACTOR 1.f

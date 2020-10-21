@@ -30,7 +30,6 @@
 #define GUNRECOILYLIMIT 57.63883972 // 0x42668E2C
 #define BIKEXROTATIONLIMIT 6.282184601 // 0x40C907A8
 #define BIKEROLLLIMIT 0.7852724195 // 0xBF49079D/0x3F49079D
-#define BIKESPEEDLIMIT 0.5 // 0x3F000000
 #define PI 3.1415927 // 0x40490FDB
 // PERFECT DARK ADDRESSES - OFFSET ADDRESSES BELOW (REQUIRES PLAYERBASE/BIKEBASE TO USE)
 #define PD_stanceflag 0x801BB74C - 0x801BB6A0
@@ -41,6 +40,7 @@
 #define PD_crosshairx 0x801BCD08 - 0x801BB6A0
 #define PD_crosshairy 0x801BCD0C - 0x801BB6A0
 #define PD_grabflag 0x801BB850 - 0x801BB6A0
+#define PD_bikeptr 0x801BD10C - 0x801BB6A0
 #define PD_thirdperson 0x801BB6A0 - 0x801BB6A0
 #define PD_gunrx 0x801BC374 - 0x801BB6A0
 #define PD_gunry 0x801BC378 - 0x801BB6A0
@@ -54,13 +54,15 @@
 #define PD_gunlxrecoil 0x801BC63C - 0x801BB6A0
 #define PD_gunlyrecoil 0x801BC640 - 0x801BB6A0
 #define PD_currentweapon 0x801BCC28 - 0x801BB6A0
-#define PD_bikeroll 0x8052D69C - 0x8052D64C
-#define PD_bikespeed 0x8052D694 - 0x8052D64C
+#define PD_bikebase 0x805142C4 - 0x805142C0
+#define PD_bikeyaw 0x804B1AB4 - 0x804B1A48
+#define PD_bikeroll 0x804B1B04 - 0x804B1A48
 // STATIC ADDRESSES BELOW
 #define JOANNADATA(X) (unsigned int)EMU_ReadInt(0x8009A024 + (X * 0x4)) // player pointer address (0x4 offset for each players)
 #define PD_menu(X) 0x80070750 + (X * 0x4) // player menu flag (0 = PD is in menu) (0x4 offset for each players)
 #define PD_camera 0x8009A26C // camera flag (1 = gameplay, 2 & 3 = ???, 4 = multiplayer sweep, 5 = gameover screen, 6 = cutscene mode, 7 = force player to move: extraction's dark room)
 #define PD_pause 0x80084014 // menu flag (1 = PD is paused)
+#define PD_stageid 0x800624E4 // stage id
 #define PD_menuitem 0x800739F8 // menu item flag (used to check if PD is running)
 #define PD_mppause 0x800ACBA6 // used to check if multiplayer match is paused
 #define PD_defaultratio 0x803CD680 // 16:9 ratio default
@@ -77,7 +79,6 @@
 #define PD_radialmenualphainit 0x803D2CDC // initial alpha value for all menus
 
 static unsigned int playerbase[4] = {0}; // current player's joannadata address
-static unsigned int bikebase[4][2] = {{0}, {0}, {0}, {0}}; // hoverbike's address and player's last grab state (used to find the exact moment when the player hops on a bike)
 static int xstick[4] = {0}, ystick[4] = {0}, usingstick[4] = {0}; // for camspy/slayer controls
 static float xmenu[4] = {0}, ymenu[4] = {0}; // for pd radial nav function
 static int radialmenudirection[4][4] = {{0}, {0}, {0}, {0}}; // used to override c buttons if user is interacting with a radial menu
@@ -86,7 +87,6 @@ static float crosshairposx[4], crosshairposy[4], aimx[4], aimy[4];
 static int gunrcenter[4], gunlcenter[4];
 
 static int PD_Status(void);
-static void PD_DetectMap(void);
 static void PD_Inject(void);
 static void PD_Crouch(const int player);
 #define PD_ResetCrouchToggle(X) safetocrouch[X] = 1, safetostand[X] = 0, crouchstance[X] = 2 // reset crouch toggle bind
@@ -120,56 +120,12 @@ static int PD_Status(void)
 	return (pd_menu >= 0 && pd_menu <= 1 && pd_camera >= 0 && pd_camera <= 7 && pd_pause >= 0 && pd_pause <= 1 && pd_romcheck == 0x04010000); // if Perfect Dark is current game
 }
 //==========================================================================
-// Purpose: searches for the current map memory locations
-// Changes Globals: playerbase, safetocrouch, safetostand, crouchstance, xmenu, ymenu, bikebase
-//==========================================================================
-static void PD_DetectMap(void)
-{
-	for(int player = PLAYER1; player < ALLPLAYERS; player++)
-	{
-		if(playerbase[player] != JOANNADATA(player) && (EMU_ReadInt(PD_camera) == 1 || EMU_ReadInt(PD_camera) == 3 || EMU_ReadInt(PD_camera) == 4 || EMU_ReadInt(PD_camera) == 6))
-		{
-			playerbase[player] = JOANNADATA(player);
-			PD_ResetCrouchToggle(player); // reset crouch toggle on new map
-			xmenu[player] = 0, ymenu[player] = 0; // reset menu direction
-		}
-		if(EMU_ReadInt(playerbase[player] + PD_grabflag) == 3 && bikebase[player][1] != 3) // player has just now hopped on a bike, search for bike pointer
-		{
-			Sleep(20); // wait before we search for the bike pointer
-			const unsigned int bikepointers[15] = {0x8052D5DC, 0x8054B1E8, 0x80552D8C, 0x8052A4FC, 0x8054ECDC, 0x80556DF4, 0x80501438, 0x8050EED4, 0x805142A4, 0x804CA4D4, 0x804D10D4, 0x803FF4F0, 0x803FF6A4, 0x803FF7A4, 0x803FF7BC}; // common bike pointers
-			for(int i = 0; i < 32; i++)
-			{
-				for(int j = 0; j < 15; j++)
-				{
-					unsigned int bikeptr = EMU_ReadInt(bikepointers[j]) + 0x6C;
-					if(EMU_ReadFloat(bikeptr) <= BIKEXROTATIONLIMIT && EMU_ReadFloat(bikeptr) >= 0 && EMU_ReadFloat(bikeptr + PD_bikeroll) <= BIKEROLLLIMIT && EMU_ReadFloat(bikeptr + PD_bikeroll) >= -BIKEROLLLIMIT && EMU_ReadFloat(bikeptr + PD_bikespeed) <= BIKESPEEDLIMIT && EMU_ReadFloat(bikeptr + PD_bikespeed) >= -BIKESPEEDLIMIT) // if bike base is valid
-					{
-						const float camx = -(EMU_ReadFloat(playerbase[player] + PD_camx)) / (360 / BIKEXROTATIONLIMIT) + BIKEXROTATIONLIMIT; // player's rotation converted to bike rotation range
-						if(roundf(EMU_ReadFloat(bikeptr) * 100) / 100 != roundf(camx * 100) / 100) // bike rotation does not match player's rotation, keep searching
-							continue;
-						bikebase[player][0] = bikeptr; // success, we found it
-						break;
-					}
-				}
-				if(bikebase[player][0]) // bike base found, leave the while loop
-					break;
-				else
-					Sleep(16); // wait one frame before we search again for the bike pointer
-			}
-		}
-		else if(bikebase[player][1] != 3)
-			bikebase[player][0] = 0;
-		bikebase[player][1] = EMU_ReadInt(playerbase[player] + PD_grabflag); // remember player's last grab state (used to find the exact moment when the player hops on a bike)
-	}
-}
-//==========================================================================
 // Purpose: calculate mouse movement and inject into current game
 // Changes Globals: safetocrouch, safetostand, crouchstance
 //==========================================================================
 static void PD_Inject(void)
 {
-	PD_DetectMap();
-	if(!playerbase[PLAYER1]) // hacks can only be injected at boot sequence before code blocks are cached, so inject until player has spawned
+	if(EMU_ReadInt(PD_stageid) < 1) // hacks can only be injected at boot sequence before code blocks are cached, so inject until player has spawned
 		PD_InjectHacks();
 	const int camera = EMU_ReadInt(PD_camera);
 	const int pause = EMU_ReadInt(PD_pause);
@@ -178,19 +134,21 @@ static void PD_Inject(void)
 	{
 		if(PROFILE[player].SETTINGS[CONFIG] == DISABLED) // bypass disabled players
 			continue;
+		playerbase[player] = JOANNADATA(player);
 		const int dead = EMU_ReadInt(playerbase[player] + PD_deathflag);
 		const int menu = EMU_ReadInt(PD_menu(player));
 		const int aimingflag = EMU_ReadInt(playerbase[player] + PD_aimingflag);
 		const int grabflag = EMU_ReadInt(playerbase[player] + PD_grabflag);
+		const unsigned int bikebase = EMU_ReadInt((unsigned int)EMU_ReadInt(playerbase[player] + PD_bikeptr) + PD_bikebase);
 		const int thirdperson = EMU_ReadInt(playerbase[player] + PD_thirdperson);
-		const int cursoraimingflag = PROFILE[player].SETTINGS[PDAIMMODE] && aimingflag;
+		const int cursoraimingflag = PROFILE[player].SETTINGS[PDAIMMODE] && aimingflag && EMU_ReadInt(playerbase[player] + PD_currentweapon) != 50;
 		const float fov = EMU_ReadFloat(playerbase[player] + PD_fov);
 		const float basefov = fov > 60.0f ? (float)OVERRIDEFOV : 60.0f;
 		const float mouseaccel = PROFILE[player].SETTINGS[ACCELERATION] ? sqrt(DEVICE[player].XPOS * DEVICE[player].XPOS + DEVICE[player].YPOS * DEVICE[player].YPOS) / TICKRATE / 12.0f * PROFILE[player].SETTINGS[ACCELERATION] : 0;
 		const float sensitivity = PROFILE[player].SETTINGS[SENSITIVITY] / 40.0f * fmax(mouseaccel, 1);
 		const float gunsensitivity = sensitivity * (PROFILE[player].SETTINGS[CROSSHAIR] / 2.5f);
-		float camx = EMU_ReadFloat(playerbase[player] + PD_camx), camy = EMU_ReadFloat(playerbase[player] + PD_camy), bikex = EMU_ReadFloat(bikebase[player][0]), bikeroll = EMU_ReadFloat(bikebase[player][0] + PD_bikeroll);
-		if(camx >= 0 && camx <= 360 && camy >= -90 && camy <= 90 && fov >= 1 && fov <= FOV_MAX && dead == 0 && menu == 1 && pause == 0 && mppause == 0 && camera == 1 && (grabflag == 0 || grabflag == 4 || grabflag == 3 && bikebase[player][0] && bikex <= BIKEXROTATIONLIMIT && bikex >= 0 && bikeroll <= BIKEROLLLIMIT && bikeroll >= -BIKEROLLLIMIT)) // if safe to inject
+		float camx = EMU_ReadFloat(playerbase[player] + PD_camx), camy = EMU_ReadFloat(playerbase[player] + PD_camy);
+		if(camx >= 0 && camx <= 360 && camy >= -90 && camy <= 90 && fov >= 1 && fov <= FOV_MAX && dead == 0 && menu == 1 && pause == 0 && mppause == 0 && camera == 1 && (grabflag == 0 || grabflag == 4 || grabflag == 3)) // if safe to inject
 		{
 			if(thirdperson == 1 || thirdperson == 2) // if player is using the slayer/camspy, translate mouse input to analog stick and continue to next player
 			{
@@ -211,26 +169,27 @@ static void PD_Inject(void)
 					camx -= 360;
 				EMU_WriteFloat(playerbase[player] + PD_camx, camx);
 			}
-			else // if player is riding hoverbike (and hoverbike address is valid)
+			else if((bikebase & 0xFF800000U) == 0x80000000U) // if player is riding hoverbike (and hoverbike address is valid)
 			{
 				PD_ResetCrouchToggle(player);
+				float bikeyaw = EMU_ReadFloat(bikebase + PD_bikeyaw), bikeroll = EMU_ReadFloat(bikebase + PD_bikeroll);
 				if(!cursoraimingflag)
 				{
-					bikex -= DEVICE[player].XPOS / 10.0f * sensitivity / (360 / BIKEXROTATIONLIMIT) * (fov / basefov);
+					bikeyaw -= DEVICE[player].XPOS / 10.0f * sensitivity / (360 / BIKEXROTATIONLIMIT) * (fov / basefov);
 					bikeroll += DEVICE[player].XPOS / 10.0f * sensitivity * (fov / basefov) / 100;
 				}
 				else
 				{
-					bikex -= aimx[player] / (360 / BIKEXROTATIONLIMIT) * (fov / basefov);
+					bikeyaw -= aimx[player] / (360 / BIKEXROTATIONLIMIT) * (fov / basefov);
 					bikeroll += aimx[player] * sensitivity * (fov / basefov) / 100;
 				}
-				while(bikex < 0)
-					bikex += BIKEXROTATIONLIMIT;
-				while(bikex >= BIKEXROTATIONLIMIT)
-					bikex -= BIKEXROTATIONLIMIT;
+				while(bikeyaw < 0)
+					bikeyaw += BIKEXROTATIONLIMIT;
+				while(bikeyaw >= BIKEXROTATIONLIMIT)
+					bikeyaw -= BIKEXROTATIONLIMIT;
 				bikeroll = ClampFloat(bikeroll, -BIKEROLLLIMIT, BIKEROLLLIMIT);
-				EMU_WriteFloat(bikebase[player][0], bikex);
-				EMU_WriteFloat(bikebase[player][0] + PD_bikeroll, bikeroll);
+				EMU_WriteFloat(bikebase + PD_bikeyaw, bikeyaw);
+				EMU_WriteFloat(bikebase + PD_bikeroll, bikeroll);
 			}
 			if(!cursoraimingflag)
 				camy += (!PROFILE[player].SETTINGS[INVERTPITCH] ? -DEVICE[player].YPOS : DEVICE[player].YPOS) / 10.0f * sensitivity * (fov / basefov);
@@ -238,7 +197,7 @@ static void PD_Inject(void)
 				camy += -aimy[player] * (fov / basefov);
 			camy = ClampFloat(camy, -90, 90);
 			EMU_WriteFloat(playerbase[player] + PD_camy, camy);
-			if(PROFILE[player].SETTINGS[CROSSHAIR] && !cursoraimingflag) // if crosshair movement is enabled and player isn't aiming (don't calculate weapon movement while the player is in aim mode)
+			if(PROFILE[player].SETTINGS[CROSSHAIR] && !cursoraimingflag) // if crosshair movement is enabled and player isn't aiming and not using horizon scanner (don't calculate weapon movement while the player is in aim mode)
 			{
 				float gunx = EMU_ReadFloat(playerbase[player] + PD_gunrx), crosshairx = EMU_ReadFloat(playerbase[player] + PD_crosshairx); // after camera x and y have been calculated and injected, calculate the gun/reload/crosshair movement
 				gunx += DEVICE[player].XPOS / (!aimingflag ? 10.0f : 40.0f) * gunsensitivity * (fov / basefov) * 0.05f / RATIOFACTOR;
@@ -515,15 +474,13 @@ static void PD_InjectHacks(void)
 }
 //==========================================================================
 // Purpose: run when emulator closes rom
-// Changes Globals: playerbase, bikebase, safetocrouch, safetostand, crouchstance, xmenu, ymenu
+// Changes Globals: playerbase, safetocrouch, safetostand, crouchstance, xmenu, ymenu
 //==========================================================================
 static void PD_Quit(void)
 {
 	for(int player = PLAYER1; player < ALLPLAYERS; player++)
 	{
 		playerbase[player] = 0;
-		bikebase[player][0] = 0;
-		bikebase[player][1] = 0;
 		PD_ResetCrouchToggle(player);
 		xmenu[player] = 0, ymenu[player] = 0;
 	}
