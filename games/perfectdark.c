@@ -140,7 +140,7 @@ static void PD_Inject(void)
 		const int grabflag = EMU_ReadInt(playerbase[player] + PD_grabflag);
 		const unsigned int bikebase = EMU_ReadInt((unsigned int)EMU_ReadInt(playerbase[player] + PD_bikeptr) + PD_bikebase);
 		const int thirdperson = EMU_ReadInt(playerbase[player] + PD_thirdperson);
-		const int cursoraimingflag = PROFILE[player].SETTINGS[PDAIMMODE] && aimingflag && EMU_ReadInt(playerbase[player] + PD_currentweapon) != 50;
+		const int cursoraimingflag = PROFILE[player].SETTINGS[PDAIMMODE] && aimingflag && EMU_ReadInt(playerbase[player] + PD_currentweapon) != 50; // don't use cursoraiming when using the horizon scanner
 		const float fov = EMU_ReadFloat(playerbase[player] + PD_fov);
 		const float basefov = fov > 60.0f ? (float)OVERRIDEFOV : 60.0f;
 		const float mouseaccel = PROFILE[player].SETTINGS[ACCELERATION] ? sqrt(DEVICE[player].XPOS * DEVICE[player].XPOS + DEVICE[player].YPOS * DEVICE[player].YPOS) / TICKRATE / 12.0f * PROFILE[player].SETTINGS[ACCELERATION] : 0;
@@ -196,7 +196,7 @@ static void PD_Inject(void)
 				camy += -aimy[player] * (fov / basefov);
 			camy = ClampFloat(camy, -90, 90);
 			EMU_WriteFloat(playerbase[player] + PD_camy, camy);
-			if(PROFILE[player].SETTINGS[CROSSHAIR] && !cursoraimingflag) // if crosshair movement is enabled and player isn't aiming and not using horizon scanner (don't calculate weapon movement while the player is in aim mode)
+			if(PROFILE[player].SETTINGS[CROSSHAIR] && !cursoraimingflag) // if crosshair movement is enabled and player isn't aiming (don't calculate weapon movement while the player is in aim mode)
 			{
 				float gunx = EMU_ReadFloat(playerbase[player] + PD_gunrx), crosshairx = EMU_ReadFloat(playerbase[player] + PD_crosshairx); // after camera x and y have been calculated and injected, calculate the gun/reload/crosshair movement
 				gunx += DEVICE[player].XPOS / (!aimingflag ? 10.0f : 40.0f) * gunsensitivity * (fov / basefov) * 0.05f / RATIOFACTOR;
