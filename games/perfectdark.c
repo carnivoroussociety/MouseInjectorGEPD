@@ -346,8 +346,8 @@ static void PD_CamspySlayer(const int player, const int camspyflag, const float 
 		xstick[player] = (int)((!PROFILE[player].SETTINGS[INVERTPITCH] ? DEVICE[player].YPOS : -DEVICE[player].YPOS) * sensitivity * 17.0f);
 		ystick[player] = (int)(DEVICE[player].XPOS * sensitivity * 17.0f);
 	}
-	xstick[player] = ClampInt(xstick[player], -127, 127);
-	ystick[player] = ClampInt(ystick[player], -127, 127);
+	xstick[player] = ClampInt(xstick[player], -128, 127);
+	ystick[player] = ClampInt(ystick[player], -128, 127);
 	usingstick[player] = 1;
 }
 //==========================================================================
@@ -403,8 +403,8 @@ static void PD_Controller(void)
 		if(!usingstick[player]) // player is not using the camspy/slayer
 		{
 			DEVICE[player].ARROW[0] = (DEVICE[player].BUTTONPRIM[UP] || DEVICE[player].BUTTONSEC[UP]) ? 127 : 0;
-			DEVICE[player].ARROW[1] = (DEVICE[player].BUTTONPRIM[DOWN] || DEVICE[player].BUTTONSEC[DOWN]) ? -127 : 0;
-			DEVICE[player].ARROW[2] = (DEVICE[player].BUTTONPRIM[LEFT] || DEVICE[player].BUTTONSEC[LEFT]) ? -127 : 0;
+			DEVICE[player].ARROW[1] = (DEVICE[player].BUTTONPRIM[DOWN] || DEVICE[player].BUTTONSEC[DOWN]) ? -128 : 0;
+			DEVICE[player].ARROW[2] = (DEVICE[player].BUTTONPRIM[LEFT] || DEVICE[player].BUTTONSEC[LEFT]) ? -128 : 0;
 			DEVICE[player].ARROW[3] = (DEVICE[player].BUTTONPRIM[RIGHT] || DEVICE[player].BUTTONSEC[RIGHT]) ? 127 : 0;
 			CONTROLLER[player].X_AXIS = DEVICE[player].ARROW[0] + DEVICE[player].ARROW[1];
 			CONTROLLER[player].Y_AXIS = DEVICE[player].ARROW[2] + DEVICE[player].ARROW[3];
