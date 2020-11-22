@@ -76,6 +76,7 @@
 #define PD_weapontable 0x8006FF1C // weapon pointer table, used to change view model positions
 #define PD_radialmenutimer 0x802EA2BC // time instruction for radial menu to appear (15 ticks)
 #define PD_radialmenualphainit 0x803D2CDC // initial alpha value for all menus
+#define PD_blurfix 0x802DB68C // nop gap on chr function to store our blur fix
 
 static unsigned int playerbase[4] = {0}; // current player's joannadata address
 static int xstick[4] = {0}, ystick[4] = {0}, usingstick[4] = {0}; // for camspy/slayer controls
@@ -437,6 +438,8 @@ static void PD_InjectHacks(void)
 		EMU_WriteInt(PD_radialmenutimer, 0x28410009);
 	if((unsigned int)EMU_ReadInt(PD_radialmenualphainit) == 0x3E99999A) // make radial menus initialize with 75% alpha
 		EMU_WriteFloat(PD_radialmenualphainit, 0.75f);
+	if((unsigned int)EMU_ReadInt(PD_blurfix) == 0x00000000) // add code to clear blur value on death
+		EMU_WriteInt(PD_blurfix, 0xA46002D8); // replace nop with sh $r0, 0x02D8 ($v1)
 	if(OVERRIDEFOV != 60) // override default fov
 	{
 		float newfov = OVERRIDEFOV;

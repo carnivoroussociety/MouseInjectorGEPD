@@ -27,7 +27,7 @@ ifdef SPEEDRUN_BUILD
 	CFLAGS += -DSPEEDRUN_BUILD
 	DLLNAME = $(SRCDIR)Mouse_Injector_Speedrun.dll
 endif
-WARNINGS = -Wextra -pedantic -Wno-parentheses -Wno-strict-aliasing
+WARNINGS = -Wextra -pedantic -Wunreachable-code -Wno-parentheses -Wno-strict-aliasing
 RESFLAGS = -F pe-i386 --input-format=rc -O coff
 
 #Linker flags
