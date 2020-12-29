@@ -188,14 +188,14 @@ DWORD WINAPI DEV_InjectThread()
 					{
 						mousetoggle = !mousetoggle;
 						GetCursorPos(&lockpos);
-						togglebuffer = emuoverclock ? 50 : 25; // buffer for 100ms
+						togglebuffer = 100 / TICKRATE; // buffer for 100ms
 						if(mouselockonfocus) // if user presses mouse toggle key while lock on focus is on, increase buffer size before mouse is relocked so user can temporarily control mouse to close game/change settings
 							togglebuffer *= 15;
 					}
 				}
 			}
 		}
-		if(checkwindowtick > (emuoverclock ? 250 : 125)) // poll every 500ms
+		if(checkwindowtick > (500 / TICKRATE)) // poll every 500ms
 		{
 			checkwindowtick = 0;
 			if((mouseunlockonloss || !mousetoggle) && emulatorwindow != GetForegroundWindow()) // window is inactive

@@ -68,7 +68,7 @@
 #define GE_weaponzpos (GE_weaponypos + 4) // z axis position for view models
 
 static unsigned int playerbase[4] = {0}; // current player's bonddata address
-static int safetocrouch[4] = {1}, safetostand[4] = {0}, crouchstance[4] = {0}; // used for crouch toggle (limits tick-tocking)
+static int safetocrouch[4] = {1, 1, 1, 1}, safetostand[4] = {0}, crouchstance[4] = {0}; // used for crouch toggle (limits tick-tocking)
 static float crosshairposx[4], crosshairposy[4], aimx[4], aimy[4];
 
 static int GE_Status(void);

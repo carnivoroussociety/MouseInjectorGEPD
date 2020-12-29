@@ -82,7 +82,7 @@ static unsigned int playerbase[4] = {0}; // current player's joannadata address
 static int xstick[4] = {0}, ystick[4] = {0}, usingstick[4] = {0}; // for camspy/slayer controls
 static float xmenu[4] = {0}, ymenu[4] = {0}; // for pd radial nav function
 static int radialmenudirection[4][4] = {{0}, {0}, {0}, {0}}; // used to override c buttons if user is interacting with a radial menu
-static int safetocrouch[4] = {1}, safetostand[4] = {0}, crouchstance[4] = {2}; // used for crouch toggle (limits tick-tocking)
+static int safetocrouch[4] = {1, 1, 1, 1}, safetostand[4] = {0}, crouchstance[4] = {2, 2, 2, 2}; // used for crouch toggle (limits tick-tocking)
 static float crosshairposx[4], crosshairposy[4], aimx[4], aimy[4];
 static int gunrcenter[4], gunlcenter[4];
 
