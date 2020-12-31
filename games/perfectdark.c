@@ -1,7 +1,7 @@
 //==========================================================================
 // Mouse Injector Plugin
 //==========================================================================
-// Copyright (C) 2016-2020 Carnivorous
+// Copyright (C) 2016-2021 Carnivorous
 // All rights reserved.
 //
 // Mouse Injector is free software; you can redistribute it and/or modify it
@@ -62,7 +62,7 @@
 #define PD_camera 0x8009A26C // camera flag (1 = gameplay, 2 & 3 = ???, 4 = multiplayer sweep, 5 = gameover screen, 6 = cutscene mode, 7 = force player to move: extraction's dark room)
 #define PD_pause 0x80084014 // menu flag (1 = PD is paused)
 #define PD_stageid 0x800624E4 // stage id
-#define PD_menuitem 0x800739F8 // menu item flag (used to check if PD is running)
+#define PD_menuitem 0x803C79C0 // debug text (used to check if PD is running)
 #define PD_mppause 0x800ACBA6 // used to check if multiplayer match is paused
 #define PD_defaultratio 0x803CD680 // 16:9 ratio default
 #define PD_defaultfov 0x802EAA5C // field of view default
@@ -117,7 +117,7 @@ const GAMEDRIVER *GAME_PERFECTDARK = &GAMEDRIVER_INTERFACE;
 static int PD_Status(void)
 {
 	const int pd_menu = EMU_ReadInt(PD_menu(PLAYER1)), pd_camera = EMU_ReadInt(PD_camera), pd_pause = EMU_ReadInt(PD_pause), pd_romcheck = EMU_ReadInt(PD_menuitem);
-	return (pd_menu >= 0 && pd_menu <= 1 && pd_camera >= 0 && pd_camera <= 7 && pd_pause >= 0 && pd_pause <= 1 && pd_romcheck == 0x04010000); // if Perfect Dark is current game
+	return (pd_menu >= 0 && pd_menu <= 1 && pd_camera >= 0 && pd_camera <= 7 && pd_pause >= 0 && pd_pause <= 1 && pd_romcheck == 0x6429202D); // if Perfect Dark is current game
 }
 //==========================================================================
 // Purpose: calculate mouse movement and inject into current game

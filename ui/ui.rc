@@ -1,7 +1,7 @@
 //==========================================================================
 // Mouse Injector Plugin
 //==========================================================================
-// Copyright (C) 2016-2020 Carnivorous
+// Copyright (C) 2016-2021 Carnivorous
 // All rights reserved.
 //
 // Mouse Injector is free software; you can redistribute it and/or modify it
@@ -148,7 +148,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
             VALUE "FileDescription", "Mouse Injector for 1964"
             VALUE "FileVersion", "2, 2, 0, 0"
             VALUE "InternalName", "Mouse Injector"
-            VALUE "LegalCopyright", "Copyright (C) 2020 Carnivorous"
+            VALUE "LegalCopyright", "Copyright (C) 2021 Carnivorous"
             VALUE "OriginalFilename", "Mouse_Injector.dll"
             VALUE "ProductName", "Mouse Injector for GE/PD"
             VALUE "ProductVersion", "2, 2, 0, 0"

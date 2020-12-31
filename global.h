@@ -1,7 +1,7 @@
 //==========================================================================
 // Mouse Injector Plugin
 //==========================================================================
-// Copyright (C) 2016-2020 Carnivorous
+// Copyright (C) 2016-2021 Carnivorous
 // All rights reserved.
 //
 // Mouse Injector is free software; you can redistribute it and/or modify it
@@ -18,7 +18,7 @@
 // along with this program; if not, visit http://www.gnu.org/licenses/gpl-2.0.html
 //==========================================================================
 #define __MOUSE_INJECTOR_VERSION__ "V2.2"
-#define __CURRENTYEAR__ "2020"
+#define __CURRENTYEAR__ "2021"
 #define CONSOLE { AllocConsole(); AttachConsole(GetCurrentProcessId()); freopen("CON", "w", stdout); }
 #define ONLY1PLAYERACTIVE \
 (PROFILE[PLAYER1].SETTINGS[CONFIG] != DISABLED && PROFILE[PLAYER2].SETTINGS[CONFIG] == DISABLED && PROFILE[PLAYER3].SETTINGS[CONFIG] == DISABLED && PROFILE[PLAYER4].SETTINGS[CONFIG] == DISABLED || \
