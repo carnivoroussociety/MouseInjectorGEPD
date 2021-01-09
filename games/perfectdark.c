@@ -62,7 +62,7 @@
 #define PD_camera 0x8009A26C // camera flag (1 = gameplay, 2 & 3 = ???, 4 = multiplayer sweep, 5 = gameover screen, 6 = cutscene mode, 7 = force player to move: extraction's dark room)
 #define PD_pause 0x80084014 // menu flag (1 = PD is paused)
 #define PD_stageid 0x800624E4 // stage id
-#define PD_menuitem 0x803C79C0 // debug text (used to check if PD is running)
+#define PD_debugtext 0x803C79E0 // debug text (used to check if PD is running)
 #define PD_mppause 0x800ACBA6 // used to check if multiplayer match is paused
 #define PD_defaultratio 0x803CD680 // 16:9 ratio default
 #define PD_defaultfov 0x802EAA5C // field of view default
@@ -116,8 +116,8 @@ const GAMEDRIVER *GAME_PERFECTDARK = &GAMEDRIVER_INTERFACE;
 //==========================================================================
 static int PD_Status(void)
 {
-	const int pd_menu = EMU_ReadInt(PD_menu(PLAYER1)), pd_camera = EMU_ReadInt(PD_camera), pd_pause = EMU_ReadInt(PD_pause), pd_romcheck = EMU_ReadInt(PD_menuitem);
-	return (pd_menu >= 0 && pd_menu <= 1 && pd_camera >= 0 && pd_camera <= 7 && pd_pause >= 0 && pd_pause <= 1 && pd_romcheck == 0x6429202D); // if Perfect Dark is current game
+	const int pd_menu = EMU_ReadInt(PD_menu(PLAYER1)), pd_camera = EMU_ReadInt(PD_camera), pd_pause = EMU_ReadInt(PD_pause), pd_romcheck = EMU_ReadInt(PD_debugtext);
+	return (pd_menu >= 0 && pd_menu <= 1 && pd_camera >= 0 && pd_camera <= 7 && pd_pause >= 0 && pd_pause <= 1 && pd_romcheck == 0x3E20416C); // if Perfect Dark is current game
 }
 //==========================================================================
 // Purpose: calculate mouse movement and inject into current game
@@ -424,7 +424,7 @@ static void PD_Controller(void)
 //==========================================================================
 static void PD_InjectHacks(void)
 {
-	const int addressarray[33] = {0x802C07B8, 0x802C07BC, 0x802C07EC, 0x802C07F0, 0x802C07FC, 0x802C0800, 0x802C0808, 0x802C0820, 0x802C0824, 0x802C082C, 0x802C0830, 0x803C7968, 0x803C796C, 0x803C7970, 0x803C7974, 0x803C7978, 0x803C797C, 0x803C7980, 0x803C7984, 0x803C7988, 0x803C798C, 0x803C7990, 0x803C7994, 0x803C7998, 0x803C799C, 0x803C79A0, 0x803C79A4, 0x803C79A8, 0x803C79AC, 0x803C79B0, 0x803C79B4, 0x803C79B8, 0x803C79BC}, codearray[33] = {0x0BC69E5A, 0x8EA10120, 0x0BC69E5F, 0x263107A4, 0x0BC69E63, 0x4614C500, 0x46120682, 0x0BC69E67, 0x26100004, 0x0BC69E6B, 0x4614C500, 0x54200003, 0x00000000, 0xE6B21668, 0xE6A8166C, 0x0BC281F0, 0x8EA10120, 0x50200001, 0xE6380530, 0x0BC281FD, 0x8EA10120, 0x50200001, 0xE6340534, 0x0BC28201, 0x8EA10120, 0x50200001, 0xE6380530, 0x0BC2820A, 0x8EA10120, 0x50200001, 0xE6340534, 0x0BC2820D, 0x00000000}; // add branch to crosshair code so cursor aiming mode is absolute (without jitter)
+	const int addressarray[33] = {0x802C07B8, 0x802C07BC, 0x802C07EC, 0x802C07F0, 0x802C07FC, 0x802C0800, 0x802C0808, 0x802C0820, 0x802C0824, 0x802C082C, 0x802C0830, 0x803C7988, 0x803C798C, 0x803C7990, 0x803C7994, 0x803C7998, 0x803C799C, 0x803C79A0, 0x803C79A4, 0x803C79A8, 0x803C79AC, 0x803C79B0, 0x803C79B4, 0x803C79B8, 0x803C79BC, 0x803C79C0, 0x803C79C4, 0x803C79C8, 0x803C79CC, 0x803C79D0, 0x803C79D4, 0x803C79D8, 0x803C79DC}, codearray[33] = {0x0BC69E62, 0x8EA10120, 0x0BC69E67, 0x263107A4, 0x0BC69E6B, 0x4614C500, 0x46120682, 0x0BC69E6F, 0x26100004, 0x0BC69E73, 0x4614C500, 0x54200003, 0x00000000, 0xE6B21668, 0xE6A8166C, 0x0BC281F0, 0x8EA10120, 0x50200001, 0xE6380530, 0x0BC281FD, 0x8EA10120, 0x50200001, 0xE6340534, 0x0BC28201, 0x8EA10120, 0x50200001, 0xE6380530, 0x0BC2820A, 0x8EA10120, 0x50200001, 0xE6340534, 0x0BC2820D, 0x00000000}; // add branch to crosshair code so cursor aiming mode is absolute (without jitter)
 	for(int index = 0; index < 33; index++) // inject code array
 		EMU_WriteInt(addressarray[index], codearray[index]);
 #ifndef SPEEDRUN_BUILD // gives unfair advantage, remove for speedrun build
