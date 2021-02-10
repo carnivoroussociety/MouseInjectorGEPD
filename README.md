@@ -1,5 +1,5 @@
 # Mouse Injector
-* https://www.archive.org/details/1964GEPD
+* https://github.com/carnivoroussociety/1964GEPD/releases/tag/latest
 
 Mouse Injector for GoldenEye 007/Perfect Dark, made for [1964 GEPD Edition](https://github.com/carnivoroussociety/1964GEPD)
 
