@@ -104,7 +104,7 @@ DWORD WINAPI DEV_InjectThread()
 	}
 	while(!stopthread)
 	{
-		if(mousetoggle && lockmousecounter % (emuoverclock ? 4 : 2) == 0) // don't execute every tick
+		if(mousetoggle && lockmousecounter % (emuoverclock ? TICKRATE_STOCK : TICKRATE_OC) == 0) // don't execute every tick
 			SetCursorPos(lockpos.x, lockpos.y); // set mouse position to lock position
 		lockmousecounter++; // overflow pseudo-counter
 		if(togglebuffer > 0)
@@ -218,7 +218,7 @@ DWORD WINAPI DEV_InjectThread()
 			checkwindowtick++;
 		if(windowactive && GAME_Status() && !configdialogopen) // if emulator is focused, game is valid and config dialog isn't open
 			GAME_Inject(); // send input to game driver
-		Sleep(TICKRATE); // 2ms (500 Hz) for overclocked, 4ms (250 Hz) for stock speed
+		Sleep(TICKRATE);
 	}
 	GAME_Quit(); // reset game driver's global variables
 	return 0;
