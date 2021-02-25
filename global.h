@@ -30,6 +30,7 @@ PROFILE[PLAYER1].SETTINGS[CONFIG] == DISABLED && PROFILE[PLAYER2].SETTINGS[CONFI
 #endif
 #define FOV_MIN 40
 #define FOV_MAX 120
+#define ARRAY_SIZE(array) ((size_t)(sizeof(array)/sizeof(*array)))
 
 inline float ClampFloat(const float value, const float min, const float max)
 {
