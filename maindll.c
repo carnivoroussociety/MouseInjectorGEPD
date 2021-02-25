@@ -263,6 +263,7 @@ static BOOL CALLBACK GUI_Config(HWND hW, UINT uMsg, WPARAM wParam, LPARAM lParam
 				case IDC_PRIMARY14:
 				case IDC_PRIMARY15:
 				case IDC_PRIMARY16:
+				case IDC_PRIMARY17:
 					GUI_ProcessKey(hW, LOWORD(wParam), 0);
 					break;
 				case IDC_SECONDARY00:
@@ -282,6 +283,7 @@ static BOOL CALLBACK GUI_Config(HWND hW, UINT uMsg, WPARAM wParam, LPARAM lParam
 				case IDC_SECONDARY14:
 				case IDC_SECONDARY15:
 				case IDC_SECONDARY16:
+				case IDC_SECONDARY17:
 					GUI_ProcessKey(hW, LOWORD(wParam), 1);
 					break;
 				case IDC_INVERTPITCH:
@@ -398,6 +400,11 @@ static void GUI_Init(const HWND hW)
 	for(int index = IDC_RATIOSTATIC; index <= IDC_FOV_NOTE; index++)
 		ShowWindow(GetDlgItem(hW, index), 0);
 	SetDlgItemTextA(hW, IDC_INFO, "The speedrun build removes the FOV/ratio adjustment and doesn't force you to use 1.2 controller style.\n\nIt also removes the Y axis pickup threshold adjustment so it is the same as the original game.");
+	EnableWindow(GetDlgItem(hW, IDC_LABEL00 + RELOAD), 0); // reload hack disabled for speedrun build
+	EnableWindow(GetDlgItem(hW, IDC_PRIMARY00 + RELOAD), 0);
+	EnableWindow(GetDlgItem(hW, IDC_SECONDARY00 + RELOAD), 0);
+	SetDlgItemTextA(hW, IDC_PRIMARY00 + RELOAD, "Disabled");
+	SetDlgItemTextA(hW, IDC_SECONDARY00 + RELOAD, "Disabled");
 #endif
 }
 //==========================================================================
@@ -416,6 +423,10 @@ static void GUI_Refresh(const HWND hW, const int revertbtn)
 	// load buttons from current player's profile
 	for(int button = 0; button < TOTALBUTTONS; button++) // load buttons from player struct and set input button statuses (setting to disabled/enabled)
 	{
+#ifdef SPEEDRUN_BUILD // do not unlock reload button for speedrun build
+		if(button == RELOAD)
+			continue;
+#endif
 		SetDlgItemTextA(hW, IDC_PRIMARY00 + button, GetKeyName(PROFILE[currentplayer].BUTTONPRIM[button])); // get key
 		SetDlgItemTextA(hW, IDC_SECONDARY00 + button, GetKeyName(PROFILE[currentplayer].BUTTONSEC[button]));
 		EnableWindow(GetDlgItem(hW, IDC_PRIMARY00 + button), PROFILE[currentplayer].SETTINGS[CONFIG] != DISABLED); // set status
@@ -795,7 +806,7 @@ static void INI_Reset(const int playerflag)
 //==========================================================================
 static void INI_SetConfig(const int playerflag, const int config)
 {
-	const int defaultbuttons[2][TOTALBUTTONS] = {{87, 83, 65, 68, 1, 2, 81, 69, 13, 17, 0, 10, 11, 38, 40, 37, 39}, {69, 68, 83, 70, 1, 2, 87, 82, 13, 65, 0, 10, 11, 38, 40, 37, 39}}; // WASD/ESDF
+	const int defaultbuttons[2][TOTALBUTTONS] = {{87, 83, 65, 68, 1, 2, 82, 81, 69, 13, 17, 0, 10, 11, 38, 40, 37, 39}, {69, 68, 83, 70, 1, 2, 84, 87, 82, 13, 65, 0, 10, 11, 38, 40, 37, 39}}; // WASD/ESDF
 	for(int buttons = 0; buttons < TOTALBUTTONS; buttons++)
 	{
 		PROFILE[playerflag].BUTTONPRIM[buttons] = defaultbuttons[config - 1][buttons];

@@ -529,8 +529,10 @@ static struct VKeyInfo vkis[] =
 
 static LPCSTR GetKeyName(unsigned int VKey)
 {
-	for(unsigned int i = 0; i < sizeof(vkis); i++)
+	for(unsigned int i = 0; i < ARRAY_SIZE(vkis); i++)
+	{
 		if(VKey == vkis[i].VKey)
 			return vkis[i].VKname;
+	}
 	return vkis[0xFF].VKname; // return "Invalid Key"
 }

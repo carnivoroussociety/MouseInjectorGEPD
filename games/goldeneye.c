@@ -290,6 +290,9 @@ static void GE_Controller(void)
 		CONTROLLER[player].R_CBUTTON = DEVICE[player].BUTTONPRIM[STRAFERIGHT] || DEVICE[player].BUTTONSEC[STRAFERIGHT];
 		CONTROLLER[player].Z_TRIG = DEVICE[player].BUTTONPRIM[FIRE] || DEVICE[player].BUTTONSEC[FIRE] || DEVICE[player].BUTTONPRIM[PREVIOUSWEAPON] || DEVICE[player].BUTTONSEC[PREVIOUSWEAPON];
 		CONTROLLER[player].R_TRIG = DEVICE[player].BUTTONPRIM[AIM] || DEVICE[player].BUTTONSEC[AIM];
+#ifndef SPEEDRUN_BUILD // speedrun build does not have reload button support
+		CONTROLLER[player].RELOAD_HACK = DEVICE[player].BUTTONPRIM[RELOAD] || DEVICE[player].BUTTONSEC[RELOAD];
+#endif
 		CONTROLLER[player].A_BUTTON = DEVICE[player].BUTTONPRIM[ACCEPT] || DEVICE[player].BUTTONSEC[ACCEPT] || DEVICE[player].BUTTONPRIM[PREVIOUSWEAPON] || DEVICE[player].BUTTONSEC[PREVIOUSWEAPON] || DEVICE[player].BUTTONPRIM[NEXTWEAPON] || DEVICE[player].BUTTONSEC[NEXTWEAPON];
 		CONTROLLER[player].B_BUTTON = DEVICE[player].BUTTONPRIM[CANCEL] || DEVICE[player].BUTTONSEC[CANCEL];
 		CONTROLLER[player].START_BUTTON = DEVICE[player].BUTTONPRIM[START] || DEVICE[player].BUTTONSEC[START];
@@ -312,6 +315,9 @@ static void GE_InjectHacks(void)
 	for(int index = 0; index < 27; index++) // inject code array
 		EMU_WriteROM(addressarray[index], codearray[index]);
 #ifndef SPEEDRUN_BUILD // gives unfair advantage, remove for speedrun build
+	const int reloadhack_address[23] = {0x000B7754, 0x000B6EC0, 0x000B7508, 0x000B750C, 0x000B7510, 0x000B7514, 0x000B7518, 0x000B751C, 0x000B7520, 0x000BEA68, 0x000BEA6C, 0x000BEA74, 0x000F30FC, 0x000F3100, 0x000F3104, 0x000F3108, 0x000F310C, 0x000F3110, 0x000F3114, 0x000F3118, 0x000F311C, 0x000F3120, 0x000F3124}, reloadhack_code[23] = {0x8FAB01C8, 0x304F4040, 0x330D4000, 0x51A00091, 0x8E0D0000, 0x3C028003, 0x8C4D6448, 0x11A0002D, 0x8C4C6450, 0x8C4200D0, 0x304B0040, 0x304A4000, 0x8E020000, 0x00000000, 0x55600005, 0x0FC17659, 0x00002025, 0x0FC17659, 0x24040001, 0x11400003, 0x00000000, 0x0FC0F13C, 0x00000000}; // add reload button hack
+	for(int index = 0; index < 23; index++) // inject code array
+		EMU_WriteROM(reloadhack_address[index], reloadhack_code[index]);
 	if((unsigned int)EMU_ReadROM(GE_controlstyle) == 0x8DC22A58) // if safe to overwrite
 		EMU_WriteROM(GE_controlstyle, 0x34020001); // always force game to use 1.2 control style
 	if((unsigned int)EMU_ReadROM(GE_reversepitch) == 0x8C420A84) // if safe to overwrite

@@ -62,7 +62,7 @@
 #define PD_camera 0x8009A26C // camera flag (1 = gameplay, 2 & 3 = ???, 4 = multiplayer sweep, 5 = gameover screen, 6 = cutscene mode, 7 = force player to move: extraction's dark room)
 #define PD_pause 0x80084014 // menu flag (1 = PD is paused)
 #define PD_stageid 0x800624E4 // stage id
-#define PD_debugtext 0x803C79E0 // debug text (used to check if PD is running)
+#define PD_debugtext 0x803C79F0 // debug text (used to check if PD is running)
 #define PD_mppause 0x800ACBA6 // used to check if multiplayer match is paused
 #define PD_defaultratio 0x803CD680 // 16:9 ratio default
 #define PD_defaultfov 0x802EAA5C // field of view default
@@ -117,7 +117,7 @@ const GAMEDRIVER *GAME_PERFECTDARK = &GAMEDRIVER_INTERFACE;
 static int PD_Status(void)
 {
 	const int pd_menu = EMU_ReadInt(PD_menu(PLAYER1)), pd_camera = EMU_ReadInt(PD_camera), pd_pause = EMU_ReadInt(PD_pause), pd_romcheck = EMU_ReadInt(PD_debugtext);
-	return (pd_menu >= 0 && pd_menu <= 1 && pd_camera >= 0 && pd_camera <= 7 && pd_pause >= 0 && pd_pause <= 1 && pd_romcheck == 0x3E20416C); // if Perfect Dark is current game
+	return (pd_menu >= 0 && pd_menu <= 1 && pd_camera >= 0 && pd_camera <= 7 && pd_pause >= 0 && pd_pause <= 1 && pd_romcheck == 0x206F6620); // if Perfect Dark is current game
 }
 //==========================================================================
 // Purpose: calculate mouse movement and inject into current game
@@ -398,6 +398,9 @@ static void PD_Controller(void)
 		CONTROLLER[player].R_CBUTTON = DEVICE[player].BUTTONPRIM[STRAFERIGHT] || DEVICE[player].BUTTONSEC[STRAFERIGHT] || radialmenudirection[player][STRAFERIGHT];
 		CONTROLLER[player].Z_TRIG = DEVICE[player].BUTTONPRIM[FIRE] || DEVICE[player].BUTTONSEC[FIRE] || DEVICE[player].BUTTONPRIM[PREVIOUSWEAPON] || DEVICE[player].BUTTONSEC[PREVIOUSWEAPON];
 		CONTROLLER[player].R_TRIG = DEVICE[player].BUTTONPRIM[AIM] || DEVICE[player].BUTTONSEC[AIM];
+#ifndef SPEEDRUN_BUILD // speedrun build does not have reload button support
+		CONTROLLER[player].RELOAD_HACK = DEVICE[player].BUTTONPRIM[RELOAD] || DEVICE[player].BUTTONSEC[RELOAD];
+#endif
 		CONTROLLER[player].A_BUTTON = DEVICE[player].BUTTONPRIM[ACCEPT] || DEVICE[player].BUTTONSEC[ACCEPT] || DEVICE[player].BUTTONPRIM[PREVIOUSWEAPON] || DEVICE[player].BUTTONSEC[PREVIOUSWEAPON] || DEVICE[player].BUTTONPRIM[NEXTWEAPON] || DEVICE[player].BUTTONSEC[NEXTWEAPON];
 		CONTROLLER[player].B_BUTTON = DEVICE[player].BUTTONPRIM[CANCEL] || DEVICE[player].BUTTONSEC[CANCEL];
 		CONTROLLER[player].START_BUTTON = DEVICE[player].BUTTONPRIM[START] || DEVICE[player].BUTTONSEC[START];
@@ -428,6 +431,9 @@ static void PD_InjectHacks(void)
 	for(int index = 0; index < 33; index++) // inject code array
 		EMU_WriteInt(addressarray[index], codearray[index]);
 #ifndef SPEEDRUN_BUILD // gives unfair advantage, remove for speedrun build
+	const int reloadhack_address[22] = {0x8038A218, 0x8038A21C, 0x8038A228, 0x8038A22C, 0x8038A230, 0x8038A234, 0x8038A238, 0x8038A23C, 0x8038A240, 0x8038A244, 0x8038A248, 0x8038A24C, 0x8038A250, 0x8038A254, 0x8038A258, 0x8038A25C, 0x8038A268, 0x8038A270, 0x803C79E0, 0x803C79E4, 0x803C79E8, 0x803C79EC}, reloadhack_code[22] = {0x13000003, 0x00000000, 0x8E020480, 0x5440000B, 0x804C0037, 0x3C04800A, 0x8C84A24C, 0x0C005408, 0x34050040, 0x1040000B, 0x00000000, 0x0FC28886, 0x00002025, 0x0BC69E78, 0x00000000, 0x1180FFF5, 0x00000000, 0x34040001, 0x0FC28886, 0x34040001, 0x0BC5A89D, 0x00000000}; // add reload button hack
+	for(int index = 0; index < 22; index++) // inject code array
+		EMU_WriteInt(reloadhack_address[index], reloadhack_code[index]);
 	if((unsigned int)EMU_ReadInt(PD_controlstyle) == 0x9042C7FC) // if safe to overwrite
 		EMU_WriteInt(PD_controlstyle, 0x34020001); // always force game to use 1.2 control style
 	if((unsigned int)EMU_ReadInt(PD_reversepitch) == 0x000F102B) // if safe to overwrite
