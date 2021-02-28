@@ -53,6 +53,7 @@
 #define GE_tankflag 0x80036448 // tank flag (0 = walking, 1 = in-tank)
 #define GE_matchended 0x8008C700 // multiplayer match flag
 #define GE_defaultratio 0x80055264 // 16:9 ratio default
+#define GE_defaultratiocrosshair 0x0009F198 // 16:9 crosshair ratio default (rom)
 #define GE_defaultfov 0x000B78BC // field of view default (rom)
 #define GE_defaultfovinit 0x000CF838 // field of view init value (rom)
 #define GE_defaultfovzoom 0x000B78DC // field of view default for zoom (rom)
@@ -346,7 +347,12 @@ static void GE_InjectHacks(void)
 			EMU_WriteFloat(GE_defaultzoomspeed, (OVERRIDEFOV - 60) * ((1.7f - 0.909091f) / 60.0f) + 0.909091f); // adjust zoom speed default (0.909091 default, 1.7 max)
 	}
 	if((unsigned int)EMU_ReadInt(GE_defaultratio) == 0x3FE38E39 && (overrideratiowidth != 16 || overrideratioheight != 9)) // override default 16:9 ratio
-		EMU_WriteFloat(GE_defaultratio, (float)overrideratiowidth / (float)overrideratioheight);
+	{
+		EMU_WriteFloat(GE_defaultratio, (float)overrideratiowidth / (float)overrideratioheight); // apply new ratio
+		float newratio = (4.f / 3.f) / ((float)overrideratiowidth / (float)overrideratioheight); // now apply ratio factor to crosshair scale
+		unsigned int unsignedinteger = *(unsigned int *)(float *)(&newratio);
+		EMU_WriteROM(GE_defaultratiocrosshair, 0x3C010000 + (short)(unsignedinteger / 0x10000));
+	}
 #endif
 	if(geshowcrosshair) // inject show crosshair hack
 	{
