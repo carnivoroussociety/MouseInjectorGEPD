@@ -42,3 +42,4 @@ extern int emuoverclock;
 extern int overridefov;
 extern int overrideratiowidth, overrideratioheight;
 extern int geshowcrosshair;
+extern int bypassviewmodelfovtweak;

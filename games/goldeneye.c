@@ -332,15 +332,18 @@ static void GE_InjectHacks(void)
 		EMU_WriteROM(GE_defaultfov, 0x3C010000 + (short)(unsignedinteger / 0x10000));
 		EMU_WriteROM(GE_defaultfovinit, 0x3C010000 + (short)(unsignedinteger / 0x10000));
 		EMU_WriteROM(GE_defaultfovzoom, 0x3C010000 + (short)(unsignedinteger / 0x10000));
-		if(EMU_ReadInt(GE_weaponypos) == 0 && EMU_ReadInt(GE_weaponzpos) == 0) // if first weapon slot position is default
+		if(!bypassviewmodelfovtweak) // allow user to bypass viewmodel position compensation for override fov (so they can see more detail at the expense of introducing draw order glitches)
 		{
-			for(int index = 0; index <= 32; index++) // cycle through first 32 weapons
+			if(EMU_ReadInt(GE_weaponypos) == 0 && EMU_ReadInt(GE_weaponzpos) == 0) // if first weapon slot position is default
 			{
-				const float fovoffset = OVERRIDEFOV - 60;
-				const float weaponypos = EMU_ReadFloat(GE_weaponypos + (index * 0x70)) - (fovoffset / (2.25f * 4.f)); // adjust weapon Y/Z positions for override field of view
-				const float weaponzpos = EMU_ReadFloat(GE_weaponzpos + (index * 0x70)) + (fovoffset / 2.75f);
-				EMU_WriteFloat(GE_weaponypos + (index * 0x70), weaponypos);
-				EMU_WriteFloat(GE_weaponzpos + (index * 0x70), weaponzpos);
+				for(int index = 0; index <= 32; index++) // cycle through first 32 weapons
+				{
+					const float fovoffset = OVERRIDEFOV - 60;
+					const float weaponypos = EMU_ReadFloat(GE_weaponypos + (index * 0x70)) - (fovoffset / (2.25f * 4.f)); // adjust weapon Y/Z positions for override field of view
+					const float weaponzpos = EMU_ReadFloat(GE_weaponzpos + (index * 0x70)) + (fovoffset / 2.75f);
+					EMU_WriteFloat(GE_weaponypos + (index * 0x70), weaponypos);
+					EMU_WriteFloat(GE_weaponzpos + (index * 0x70), weaponzpos);
+				}
 			}
 		}
 		if(OVERRIDEFOV > 60)

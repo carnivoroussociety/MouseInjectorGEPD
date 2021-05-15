@@ -282,7 +282,7 @@ const char *DEV_Name(const int id)
 //==========================================================================
 int DEV_Type(const int id)
 {
-	return ManyMouse_DeviceName(id, 0) != NULL ? MOUSETYPE : KEYBOARDTYPE; // 0 mouse : 1 keyboard
+	return ManyMouse_DeviceName(id, MOUSETYPE) != NULL ? MOUSETYPE : KEYBOARDTYPE; // 0 mouse : 1 keyboard
 }
 //==========================================================================
 // Purpose: Returns the index id within a type (for converting to device combobox)

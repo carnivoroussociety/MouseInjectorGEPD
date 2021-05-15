@@ -452,16 +452,19 @@ static void PD_InjectHacks(void)
 		unsigned int unsignedinteger = *(unsigned int *)(float *)(&newfov);
 		EMU_WriteInt(PD_defaultfov, 0x3C010000 + (short)(unsignedinteger / 0x10000));
 		EMU_WriteInt(PD_defaultfovzoom, 0x3C010000 + (short)(unsignedinteger / 0x10000));
-		if((unsigned int)EMU_ReadInt(EMU_ReadInt(PD_weapontable) + 0x30) == 0xC2240000) // if first weapon slot position is default
+		if(!bypassviewmodelfovtweak) // allow user to bypass viewmodel position compensation for override fov (so they can see more detail at the expense of displaying animation culling keyframes)
 		{
-			for(int index = 0; index < 64; index++) // cycle through first 64 weapons
+			if((unsigned int)EMU_ReadInt(EMU_ReadInt(PD_weapontable) + 0x30) == 0xC2240000) // if first weapon slot position is default
 			{
-				const unsigned int weaponptr = EMU_ReadInt(PD_weapontable + (index * 4)); // get pointer for weapon slot
-				const float fovoffset = OVERRIDEFOV - 60;
-				const float weaponypos = EMU_ReadFloat(weaponptr + 0x30) - (fovoffset / (2.75f * 4.f)); // adjust weapon Y/Z positions for override field of view
-				const float weaponzpos = EMU_ReadFloat(weaponptr + 0x34) + (fovoffset / 3.f);
-				EMU_WriteFloat(weaponptr + 0x30, weaponypos);
-				EMU_WriteFloat(weaponptr + 0x34, weaponzpos);
+				for(int index = 0; index < 64; index++) // cycle through first 64 weapons
+				{
+					const unsigned int weaponptr = EMU_ReadInt(PD_weapontable + (index * 4)); // get pointer for weapon slot
+					const float fovoffset = OVERRIDEFOV - 60;
+					const float weaponypos = EMU_ReadFloat(weaponptr + 0x30) - (fovoffset / (2.75f * 4.f)); // adjust weapon Y/Z positions for override field of view
+					const float weaponzpos = EMU_ReadFloat(weaponptr + 0x34) + (fovoffset / 3.f);
+					EMU_WriteFloat(weaponptr + 0x30, weaponypos);
+					EMU_WriteFloat(weaponptr + 0x34, weaponzpos);
+				}
 			}
 		}
 		if(OVERRIDEFOV > 60)

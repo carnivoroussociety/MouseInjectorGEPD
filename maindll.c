@@ -55,6 +55,7 @@ int emuoverclock = 1; // is this emu overclocked?
 int overridefov = 60; // fov override
 int overrideratiowidth = 16, overrideratioheight = 9; // ratio override
 int geshowcrosshair = 0; // inject the always show ge crosshair hack on start
+int bypassviewmodelfovtweak = 0; // bypass viewmodel positional tweak for fov override
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved);
 static int Init(const HWND hW);
@@ -186,7 +187,7 @@ static void StopInjection(void)
 }
 //==========================================================================
 // Purpose: manage config window
-// Changed Globals: PROFILE.SETTINGS, currentplayer, lastinputbutton, overridefov, changeratio, geshowcrosshair, mouselockonfocus, mouseunlockonloss
+// Changed Globals: PROFILE.SETTINGS, currentplayer, lastinputbutton, overridefov, changeratio, geshowcrosshair, bypassviewmodelfovtweak, mouselockonfocus, mouseunlockonloss
 //==========================================================================
 static BOOL CALLBACK GUI_Config(HWND hW, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -312,6 +313,9 @@ static BOOL CALLBACK GUI_Config(HWND hW, UINT uMsg, WPARAM wParam, LPARAM lParam
 				case IDC_GESHOWCROSSHAIR:
 					geshowcrosshair = SendMessage(GetDlgItem(hW, LOWORD(wParam)), BM_GETCHECK, 0, 0);
 					break;
+				case IDC_BYPASSVIEWMODELFOVWEAK:
+					bypassviewmodelfovtweak = SendMessage(GetDlgItem(hW, LOWORD(wParam)), BM_GETCHECK, 0, 0);
+					break;
 				case IDC_RATIOHEIGHT:
 				case IDC_RATIOWIDTH:
 					if(stopthread) // do this if game isn't running
@@ -397,14 +401,16 @@ static void GUI_Init(const HWND hW)
 	sprintf(overrideratio, "%d", overrideratioheight);
 	SetDlgItemTextA(hW, IDC_RATIOHEIGHT, overrideratio);
 #ifdef SPEEDRUN_BUILD // hide fov/ratio elements for speedrun build and replace info box with details about the speedrun build
-	for(int index = IDC_RATIOSTATIC; index <= IDC_FOV_NOTE; index++)
+	for(int index = IDC_RATIOSTATIC; index <= IDC_FOV_NOTE; index++) // hide the ratio/fov dialog items
 		ShowWindow(GetDlgItem(hW, index), 0);
+	ShowWindow(GetDlgItem(hW, IDC_BYPASSVIEWMODELFOVWEAK), 0); // hide the bypass viewmodel fov tweak checkbox
 	SetDlgItemTextA(hW, IDC_INFO, "The speedrun build removes the FOV/ratio adjustment and doesn't force you to use 1.2 controller style.\n\nIt also removes the Y axis pickup threshold adjustment so it is the same as the original game.");
 	EnableWindow(GetDlgItem(hW, IDC_LABEL00 + RELOAD), 0); // reload hack disabled for speedrun build
 	EnableWindow(GetDlgItem(hW, IDC_PRIMARY00 + RELOAD), 0);
 	EnableWindow(GetDlgItem(hW, IDC_SECONDARY00 + RELOAD), 0);
 	SetDlgItemTextA(hW, IDC_PRIMARY00 + RELOAD, "Disabled");
 	SetDlgItemTextA(hW, IDC_SECONDARY00 + RELOAD, "Disabled");
+	SetDlgItemTextA(hW, IDC_LABEL00 + CANCEL, "Use/Cancel/Reload"); // tweak description (we only have access to the B button now)
 #endif
 }
 //==========================================================================
@@ -504,9 +510,10 @@ static void GUI_Refresh(const HWND hW, const int revertbtn)
 	EnableWindow(GetDlgItem(hW, IDC_RESETFOV), stopthread && overridefov != 60); // disable/enable fov reset button depending if fov is default or not and if game isn't running
 	for(int index = IDC_RATIOSTATIC; index <= IDC_RATIOHEIGHT; index++)
 		EnableWindow(GetDlgItem(hW, index), stopthread); // if stopthread is 0 it means game is running
-	for(int index = IDC_FOV_DEGREES; index <= IDC_GESHOWCROSSHAIR; index++)
+	for(int index = IDC_FOV_DEGREES; index <= IDC_BYPASSVIEWMODELFOVWEAK; index++)
 		EnableWindow(GetDlgItem(hW, index), stopthread);
 	SendMessage(GetDlgItem(hW, IDC_GESHOWCROSSHAIR), BM_SETCHECK, geshowcrosshair ? BST_CHECKED : BST_UNCHECKED, 0); // set checkbox for show crosshair
+	SendMessage(GetDlgItem(hW, IDC_BYPASSVIEWMODELFOVWEAK), BM_SETCHECK, bypassviewmodelfovtweak ? BST_CHECKED : BST_UNCHECKED, 0); // set checkbox for bypass viewmodel fov tweak
 	// revert button
 	if(revertbtn != 2) // 2 is ignore flag
 		EnableWindow(GetDlgItem(hW, IDC_REVERT), revertbtn); // set revert button status
@@ -652,14 +659,14 @@ static void GUI_DetectDevice(const HWND hW, const int buttonid)
 }
 //==========================================================================
 // Purpose: load profile settings (i'm really sorry about this mess)
-// Changed Globals: PROFILE, overridefov, overrideratiowidth, overrideratioheight, geshowcrosshair, mouselockonfocus, mouseunlockonloss, mousetogglekey
+// Changed Globals: PROFILE, overridefov, overrideratiowidth, overrideratioheight, geshowcrosshair, bypassviewmodelfovtweak, mouselockonfocus, mouseunlockonloss, mousetogglekey
 //==========================================================================
 static void INI_Load(const HWND hW, const int loadplayer)
 {
 	#define PRIMBTNBLKSIZE (ALLPLAYERS * TOTALBUTTONS) // 4 PLAYERS * BUTTONPRIM
 	#define BUTTONBLKSIZE (ALLPLAYERS * (TOTALBUTTONS + TOTALBUTTONS)) // 4 PLAYERS * (BUTTONPRIM + BUTTONSEC)
 	#define SETTINGBLKSIZE (ALLPLAYERS * TOTALSETTINGS) // 4 PLAYERS * SETTINGS
-	#define TOTALLINES (BUTTONBLKSIZE + SETTINGBLKSIZE + 7) // profile struct[all players] + overridefov + overrideratiowidth + overrideratioheight + geshowcrosshair + mouselockonfocus + mouseunlockonloss + mousetogglekey
+	#define TOTALLINES (BUTTONBLKSIZE + SETTINGBLKSIZE + 8) // profile struct[all players] + overridefov + overrideratiowidth + overrideratioheight + geshowcrosshair + bypassviewmodelfovtweak + mouselockonfocus + mouseunlockonloss + mousetogglekey
 	FILE *fileptr; // file pointer for mouseinjector.ini
 	if((fileptr = fopen(inifilepathdefault, "r")) == NULL) // if INI file was not found
 		fileptr = _wfopen(inifilepath, L"r"); // reattempt to load INI file using wide character filepath
@@ -695,10 +702,11 @@ static void INI_Load(const HWND hW, const int loadplayer)
 			{
 				if(loadplayer == ALLPLAYERS) // only load if given ALLPLAYERS flag
 				{
-					overridefov = ClampInt(atoi(line[TOTALLINES - 7]), FOV_MIN, FOV_MAX); // load overridefov
-					overrideratiowidth = ClampInt(atoi(line[TOTALLINES - 6]), 1, 99); // load overrideratiowidth
-					overrideratioheight = ClampInt(atoi(line[TOTALLINES - 5]), 1, 99); // load overrideratioheight
-					geshowcrosshair = !(!atoi(line[TOTALLINES - 4])); // load geshowcrosshair
+					overridefov = ClampInt(atoi(line[TOTALLINES - 8]), FOV_MIN, FOV_MAX); // load overridefov
+					overrideratiowidth = ClampInt(atoi(line[TOTALLINES - 7]), 1, 99); // load overrideratiowidth
+					overrideratioheight = ClampInt(atoi(line[TOTALLINES - 6]), 1, 99); // load overrideratioheight
+					geshowcrosshair = !(!atoi(line[TOTALLINES - 5])); // load geshowcrosshair
+					bypassviewmodelfovtweak = !(!atoi(line[TOTALLINES - 4])); // load bypassviewmodelfovtweak
 					mouselockonfocus = !(!atoi(line[TOTALLINES - 3])); // load mouselockonfocus
 					mouseunlockonloss = !(!atoi(line[TOTALLINES - 2])); // load mouseunlockonloss
 					mousetogglekey = ClampInt(atoi(line[TOTALLINES - 1]), 0x00, 0xFF); // load mousetogglekey
@@ -759,7 +767,7 @@ static void INI_Save(const HWND hW)
 		for(int player = PLAYER1; player < ALLPLAYERS; player++)
 			for(int index = 0; index < TOTALSETTINGS; index++)
 				fprintf(fileptr, "%d\n", ClampInt(PROFILE[player].SETTINGS[index], 0, 100));
-		fprintf(fileptr, "%d\n%d\n%d\n%d\n%d\n%d\n%d", overridefov, overrideratiowidth, overrideratioheight, geshowcrosshair, mouselockonfocus, mouseunlockonloss, mousetogglekey);
+		fprintf(fileptr, "%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d", overridefov, overrideratiowidth, overrideratioheight, geshowcrosshair, bypassviewmodelfovtweak, mouselockonfocus, mouseunlockonloss, mousetogglekey);
 		fclose(fileptr); // close the file stream
 	}
 	else // if saving file failed (could be set to read only, antivirus is preventing file writing or filepath is invalid)
@@ -767,7 +775,7 @@ static void INI_Save(const HWND hW)
 }
 //==========================================================================
 // Purpose: reset a player struct or all players
-// Changed Globals: PROFILE, overridefov, overrideratiowidth, overrideratioheight, geshowcrosshair, mouselockonfocus, mouseunlockonloss, mousetogglekey, lastinputbutton
+// Changed Globals: PROFILE, overridefov, overrideratiowidth, overrideratioheight, geshowcrosshair, bypassviewmodelfovtweak, mouselockonfocus, mouseunlockonloss, mousetogglekey, lastinputbutton
 //==========================================================================
 static void INI_Reset(const int playerflag)
 {
@@ -786,7 +794,7 @@ static void INI_Reset(const int playerflag)
 			PROFILE[player].SETTINGS[MOUSE] = defaultmouse;
 			PROFILE[player].SETTINGS[KEYBOARD] = defaultkeyboard;
 		}
-		overridefov = 60, overrideratiowidth = 16, overrideratioheight = 9, geshowcrosshair = 0, mouselockonfocus = 0, mouseunlockonloss = 1, mousetogglekey = 0x34;
+		overridefov = 60, overrideratiowidth = 16, overrideratioheight = 9, geshowcrosshair = 0, bypassviewmodelfovtweak = 0, mouselockonfocus = 0, mouseunlockonloss = 1, mousetogglekey = 0x34;
 	}
 	else
 	{
