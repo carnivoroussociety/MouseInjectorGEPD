@@ -51,22 +51,22 @@ enum QUICKCONFIGENUM {DISABLED = 0, WASD, ESDF, CUSTOM};
 enum PLAYERSENUM {PLAYER1 = 0, PLAYER2, PLAYER3, PLAYER4, ALLPLAYERS};
 enum DEVICETYPE {MOUSETYPE = 0, KEYBOARDTYPE};
 
-struct
+struct PROFILE_STRUCT
 {
 	int BUTTONPRIM[TOTALBUTTONS];
 	int BUTTONSEC[TOTALBUTTONS];
 	int SETTINGS[TOTALSETTINGS];
-} PROFILE[ALLPLAYERS];
+};
 
 // device struct (used for all game input)
-struct
+struct DEVICE_STRUCT
 {
 	int XPOS, YPOS; // mouse input
 	int WHEEL; // mouse wheel buffer cool down
 	int BUTTONPRIM[TOTALBUTTONS]; // button values for primary set (0-1)
 	int BUTTONSEC[TOTALBUTTONS]; // button values for secondary set (0-1)
 	int ARROW[4]; // arrow information
-} DEVICE[ALLPLAYERS];
+};
 
 // plugin spec
 #define PLUGIN_TYPE_CONTROLLER 4
@@ -128,5 +128,3 @@ typedef union
 		signed X_AXIS: 8;
 	};
 } BUTTONS;
-
-BUTTONS CONTROLLER[4]; // end of plugin spec

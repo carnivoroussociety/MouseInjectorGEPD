@@ -86,8 +86,8 @@ static int safetocrouch[4] = {1, 1, 1, 1}, safetostand[4] = {0}, crouchstance[4]
 static float crosshairposx[4], crosshairposy[4], aimx[4], aimy[4];
 static int gunrcenter[4], gunlcenter[4];
 
-static int PD_Status(void);
-static void PD_Inject(void);
+int PD_Status(void);
+void PD_Inject(void);
 static void PD_Crouch(const int player);
 #define PD_ResetCrouchToggle(X) safetocrouch[X] = 1, safetostand[X] = 0, crouchstance[X] = 2 // reset crouch toggle bind
 #define PD_ResetXYStick(X) xstick[X] = 0, ystick[X] = 0, usingstick[X] = 0 // reset x/y stick array
@@ -97,7 +97,7 @@ static void PD_CamspySlayer(const int player, const int camspyflag, const float 
 static void PD_RadialMenuNav(const int player);
 static void PD_Controller(void);
 static void PD_InjectHacks(void);
-static void PD_Quit(void);
+void PD_Quit(void);
 
 static const GAMEDRIVER GAMEDRIVER_INTERFACE =
 {
@@ -114,7 +114,7 @@ const GAMEDRIVER *GAME_PERFECTDARK = &GAMEDRIVER_INTERFACE;
 // Q: What is happening here?
 // A: We look up some static addresses and if the values are within the expected ranges the program can assume that the game is currently running
 //==========================================================================
-static int PD_Status(void)
+int PD_Status(void)
 {
 	const int pd_menu = EMU_ReadInt(PD_menu(PLAYER1)), pd_camera = EMU_ReadInt(PD_camera), pd_pause = EMU_ReadInt(PD_pause), pd_romcheck = EMU_ReadInt(PD_debugtext);
 	return (pd_menu >= 0 && pd_menu <= 1 && pd_camera >= 0 && pd_camera <= 7 && pd_pause >= 0 && pd_pause <= 1 && pd_romcheck == 0x206F6620); // if Perfect Dark is current game
@@ -123,7 +123,7 @@ static int PD_Status(void)
 // Purpose: calculate mouse movement and inject into current game
 // Changes Globals: safetocrouch, safetostand, crouchstance
 //==========================================================================
-static void PD_Inject(void)
+void PD_Inject(void)
 {
 	if(EMU_ReadInt(PD_stageid) < 1) // hacks can only be injected at boot sequence before code blocks are cached, so inject until player has spawned
 		PD_InjectHacks();
@@ -487,7 +487,7 @@ static void PD_InjectHacks(void)
 // Purpose: run when emulator closes rom
 // Changes Globals: playerbase, safetocrouch, safetostand, crouchstance, xmenu, ymenu
 //==========================================================================
-static void PD_Quit(void)
+void PD_Quit(void)
 {
 	for(int player = PLAYER1; player < ALLPLAYERS; player++)
 	{

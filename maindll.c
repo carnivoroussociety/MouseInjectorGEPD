@@ -42,6 +42,10 @@ static CONTROL *ctrlptr = NULL;
 static int changeratio = 0; // used to display different hoz fov for 4:3/16:9 ratio
 static int guibusy = 1; // flag to bypass gui message pump
 
+BUTTONS CONTROLLER[4]; // global button plugin struct
+struct PROFILE_STRUCT PROFILE[4]; // global profile settings struct
+struct DEVICE_STRUCT DEVICE[4]; // global device struct
+
 const unsigned char **rdramptr = 0; // pointer to emulator's rdram table
 const unsigned char **romptr = 0; // pointer to emulator's loaded rom
 int stopthread = 1; // 1 to end inject thread

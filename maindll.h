@@ -29,6 +29,10 @@
 #define OVERRIDEFOV overridefov
 #endif
 
+extern BUTTONS CONTROLLER[4];
+extern struct PROFILE_STRUCT PROFILE[4];
+extern struct DEVICE_STRUCT DEVICE[4];
+
 extern const unsigned char **rdramptr;
 extern const unsigned char **romptr;
 extern int stopthread;

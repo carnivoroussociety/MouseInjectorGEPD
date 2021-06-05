@@ -72,14 +72,14 @@ static unsigned int playerbase[4] = {0}; // current player's bonddata address
 static int safetocrouch[4] = {1, 1, 1, 1}, safetostand[4] = {0}, crouchstance[4] = {0}; // used for crouch toggle (limits tick-tocking)
 static float crosshairposx[4], crosshairposy[4], aimx[4], aimy[4];
 
-static int GE_Status(void);
-static void GE_Inject(void);
+int GE_Status(void);
+void GE_Inject(void);
 static void GE_Crouch(const int player);
 #define GE_ResetCrouchToggle(X) safetocrouch[X] = 1, safetostand[X] = 0, crouchstance[X] = 0 // reset crouch toggle bind
 static void GE_AimMode(const int player, const int aimingflag, const float fov, const float basefov);
 static void GE_Controller(void);
 static void GE_InjectHacks(void);
-static void GE_Quit(void);
+void GE_Quit(void);
 
 static const GAMEDRIVER GAMEDRIVER_INTERFACE =
 {
@@ -96,7 +96,7 @@ const GAMEDRIVER *GAME_GOLDENEYE007 = &GAMEDRIVER_INTERFACE;
 // Q: What is happening here?
 // A: We look up some static addresses and if the values are within the expected ranges the program can assume that the game is currently running
 //==========================================================================
-static int GE_Status(void)
+int GE_Status(void)
 {
 	const int ge_camera = EMU_ReadInt(GE_camera), ge_page = EMU_ReadInt(GE_menupage), ge_pause = EMU_ReadInt(GE_pause), ge_exit = EMU_ReadInt(GE_exit);
 	const float ge_crosshairx = EMU_ReadFloat(GE_menux), ge_crosshairy = EMU_ReadFloat(GE_menuy);
@@ -112,7 +112,7 @@ static int GE_Status(void)
 // Q: Could you explain if(aimingflag) gunx /= emuoverclock ? 1.03f : 1.07f, crosshairx /= emuoverclock ? 1.03f : 1.07f;
 // A: GE_InjectHacks() disables the engine from overwriting the crosshair pos and gun rot - this is so aiming is jitter free. But it removed the auto centering code while aiming. If the player turns off cursor aiming for GE, the crosshair and gun will no longer move back to the center (it'll float to the corners of the screen). This if statement will emulate the centering code. The emuoverclock condition will make the scale the same - regardless of overclock or stock (inject exec at higher tickrate if overclocked).
 //==========================================================================
-static void GE_Inject(void)
+void GE_Inject(void)
 {
 	if(EMU_ReadInt(GE_menupage) < 1) // hacks can only be injected at boot sequence before code blocks are cached, so inject until the main menu
 		GE_InjectHacks();
@@ -373,7 +373,7 @@ static void GE_InjectHacks(void)
 // Purpose: run when emulator closes rom
 // Changes Globals: playerbase, safetocrouch, safetostand, crouchstance
 //==========================================================================
-static void GE_Quit(void)
+void GE_Quit(void)
 {
 	for(int player = PLAYER1; player < ALLPLAYERS; player++)
 	{
